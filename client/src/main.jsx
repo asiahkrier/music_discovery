@@ -49,7 +49,7 @@ function App() {
   useEffect(() => { select('Radiohead', false); return () => request.current?.abort(); }, []);
   const source = detail?.source || searchSource;
   return <div className="app">
-    <header><a className="brand" href="/" aria-label="Ripple home"><span className="logo">≋</span> music<span>discovery</span></a><span className="edition">THE DISCOVERY SESSION <b>01</b></span></header>
+    <header><a className="brand" href="/" aria-label="Ripple home"><span className="logo">≋</span> Ripple</a><span className="edition">THE DISCOVERY SESSION <b>01</b></span></header>
     <main>
       <div className="intro"><div><p className="eyebrow">A NEW WAY TO WANDER</p><h1>Follow your sound<span>.</span></h1><p>Start with an artist you love. Find someone new.</p></div><span className="mode">{source === 'live' ? 'Last.fm · Live data' : 'Demo · Sample catalog'}</span></div>
       <form onSubmit={search} className="search"><label className="sr-only" htmlFor="artist-search">Search for an artist</label><span aria-hidden="true">⌕</span><input id="artist-search" maxLength={100} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search for an artist…" autoComplete="off"/><button type="submit">Find artists <span aria-hidden="true">↗</span></button></form>
