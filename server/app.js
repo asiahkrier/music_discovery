@@ -2,7 +2,17 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { getMock, searchMock } from './mock-data.js';
 
-const list = value => Array.isArray(value) ? value : value ? [value] : [];
+const list = value => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value) {
+    return [value];
+  }
+
+  return [];
+};
 export function normalizeArtist(artist) {
   return {
     name: artist.name,
