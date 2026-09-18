@@ -1,0 +1,78 @@
+name: Trivy dependency scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Scan dependencies
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          format: json
+          output: trivy-results.json
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: '0'
+          skip-dirs: node_modules,client/dist,.git,.cache
+
+      - name: Generate severity summary
+        run: |
+          trivy --version > trivy-version.txt
+          python3 - <<'PY'
+          import json
+          import os
+          from collections import Counter
+
+          with open("trivy-results.json") as f:
+              report = json.load(f)
+
+          counts = Counter(
+              v["Severity"]
+              for result in report.get("Results", [])
+              for v in result.get("Vulnerabilities", [])
+          )
+
+          lines = [
+              "# Trivy dependency scan",
+              "",
+              f"Commit: {os.environ['GITHUB_SHA']}",
+              "Execution: GitHub Actions (CI)",
+              "Scope: filesystem scan of repository dependency manifests/lockfiles",
+              "Excluded directories: node_modules, client/dist, .git, .cache",
+              "",
+              "| Severity | Count |",
+              "|---|---:|",
+          ]
+          for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]:
+              lines.append(f"| {severity} | {counts[severity]} |")
+
+          text = "\n".join(lines) + "\n"
+          with open("trivy-summary.md", "w") as f:
+              f.write(text)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(text)
+          PY
+
+      - name: Save scan reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: |
+            trivy-results.json
+            trivy-summary.md
+            trivy-version.txt
