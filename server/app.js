@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { getMock, searchMock } from './mock-data.js';
+import { convert } from 'html-to-text';
 
 const list = value => Array.isArray(value) ? value : value ? [value] : [];
 export function normalizeArtist(artist) {
@@ -8,7 +9,13 @@ export function normalizeArtist(artist) {
     name: artist.name,
     tags: list(artist.tags?.tag).map(tag => tag.name).slice(0, 3),
     // React renders this as text, never as untrusted HTML.
-    bio: (artist.bio?.summary || '').replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '').replace(/<[^>]+>/g, '').trim(),
+    bio: convert(artist.bio?.summary || '', {
+  wordwrap: false,
+  selectors: [
+    { selector: 'a', format: 'skip' },
+    { selector: 'img', format: 'skip' },
+  ],
+}).trim(),
   };
 }
 export function createApp({ apiKey = '', fetchImpl = fetch } = {}) {
