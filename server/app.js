@@ -1,81 +1,35 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
-import { getMock, searchMock } from './mock-data.js';
-import { convert } from 'html-to-text';
-
-const list = value => {
-  if (Array.isArray(value)) {
-    return value;
-  }
-
-  if (value) {
-    return [value];
-  }
-
-  return [];
-};
-export function normalizeArtist(artist) {
-  return {
-    name: artist.name,
-    tags: list(artist.tags?.tag).map(tag => tag.name).slice(0, 3),
-    // React renders this as text, never as untrusted HTML.
-    bio: convert(artist.bio?.summary || '', {
-  wordwrap: false,
-  selectors: [
-    { selector: 'a', format: 'skip' },
-    { selector: 'img', format: 'skip' },
-  ],
-}).trim(),
-  };
-}
-export function createApp({ apiKey = '', fetchImpl = fetch } = {}) {
+import { createSpotify, validId } from './spotify.js';
+export function createApp({ fetchImpl = fetch, songOptions = {} } = {}) {
   const app = express();
+  const spotify = createSpotify({ ...songOptions, fetchImpl });
   app.disable('x-powered-by');
-  async function lastfm(method, artist) {
-    const url = new URL('https://ws.audioscrobbler.com/2.0/');
-    url.search = new URLSearchParams({ method, artist, api_key: apiKey, format: 'json', limit: '10', autocorrect: '1' });
-    const response = await fetchImpl(url, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) throw new Error('Music service unavailable');
-    const data = await response.json();
-    if (data.error) throw new Error('Music service unavailable');
-    return data;
-  }
-  app.get('/api/artists', async (req, res) => {
-    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-    if (!query || query.length > 100) return res.status(400).json({ error: 'Enter an artist name between 1 and 100 characters.' });
-    let notice = '';
-    if (apiKey) {
-      try {
-        const data = await lastfm('artist.search', query);
-        return res.json({ source: 'live', artists: list(data.results?.artistmatches?.artist).map(normalizeArtist) });
-      } catch { notice = 'Last.fm is unavailable. Showing matching sample artists instead.'; }
-    }
-    return res.json({ source: 'demo', notice, artists: searchMock(query) });
+  const route = (path, handler) => app.get(path, async (req, res) => {
+    const country = req.query.country || 'US';
+    if (typeof country !== 'string' || !/^[A-Z]{2}$/.test(country)) return res.status(400).json({ error: 'Use a two-letter country code.' });
+    if (req.query.id !== undefined && !validId(req.query.id)) return res.status(400).json({ error: 'Use a valid Spotify artist ID.' });
+    if (req.query.q !== undefined && (typeof req.query.q !== 'string' || !req.query.q.trim() || req.query.q.length > 200)) return res.status(400).json({ error: 'Enter a search between 1 and 200 characters.' });
+    try { res.json(await handler(req.query, country)); } catch (e) { res.status(e.status || 502).json({ error: e.status ? e.message : 'Spotify is temporarily unavailable. Please try again.' }); }
   });
-  app.get('/api/artist', async (req, res) => {
-    const name = typeof req.query.name === 'string' ? req.query.name.trim() : '';
-    if (!name || name.length > 100) return res.status(400).json({ error: 'Enter a valid artist name.' });
-    let notice = '';
-    if (apiKey) {
-      try {
-        const info = await lastfm('artist.getInfo', name);
-        if (!info.artist?.name) return res.status(404).json({ error: 'Artist not found.' });
-        const artist = normalizeArtist(info.artist);
-        let similar = [];
-        try {
-          const data = await lastfm('artist.getSimilar', artist.name);
-          const seen = new Set([artist.name.toLowerCase()]);
-          similar = list(data.similarartists?.artist).filter(a => {
-            if (!a.name || seen.has(a.name.toLowerCase())) return false;
-            seen.add(a.name.toLowerCase()); return true;
-          }).slice(0, 5).map(normalizeArtist);
-        } catch { notice = 'Artist loaded, but similar artists could not be loaded. Try again.'; }
-        return res.json({ source: 'live', notice, artist, similar });
-      } catch { notice = 'Last.fm is unavailable. Showing sample data for this artist instead.'; }
-    }
-    const artist = getMock(name);
-    if (!artist) return res.status(404).json({ error: apiKey ? 'Live lookup failed and this artist is not in the demo catalog. Try Radiohead, Daft Punk, or SZA.' : 'Artist not in the demo catalog. Try Radiohead, Daft Punk, or SZA.' });
-    return res.json({ source: 'demo', notice, artist, similar: artist.similar.map(getMock) });
+  route('/api/song-providers', () => ({ providers: [{ id: 'spotify', name: 'Spotify', enabled: spotify.configured }] }));
+  route('/api/artists', async ({ q }, country) => {
+    if (!q) throw Object.assign(new Error('Enter an artist name or Spotify artist link.'), { status: 400 });
+    const match = q.match(/^https:\/\/open\.spotify\.com\/artist\/([A-Za-z0-9]{22})(?:\?.*)?$/);
+    return { artists: match ? [await spotify.profile(match[1])] : await spotify.search(q, country), country };
+  });
+  route('/api/artist', async ({ id }, country) => {
+    if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
+    return { artist: await spotify.profile(id), country, source: 'Spotify' };
+  });
+  route('/api/discover', async (_, country) => ({ artists: await spotify.discover(country), country, notice: 'Shuffled Spotify genre searches, including different result pages. This is not a popularity ranking.' }));
+  route('/api/related-artists', async ({ id }, country) => {
+    if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
+    return spotify.related(id, country);
+  });
+  route('/api/songs', async ({ q }, country) => {
+    if (!q) throw Object.assign(new Error('Enter a song or artist.'), { status: 400 });
+    return { songs: await spotify.songs(q, country), country, providers: [{ name: 'Spotify', status: 'ok' }] };
   });
   app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
   app.use(express.static(fileURLToPath(new URL('../client/dist/', import.meta.url))));
