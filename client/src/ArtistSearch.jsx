@@ -28,11 +28,11 @@ export default function ArtistSearch() {
   }
   function search(event) {
     event.preventDefault(); setDetail(null); setResults(null);
-    load(`/api/artists?${new URLSearchParams({ q: query.trim(), country })}`, data => setResults(data));
+    void load(`/api/artists?${new URLSearchParams({ q: query.trim(), country })}`, data => setResults(data));
   }
   function select(artist) {
     setDetail(null);
-    load(`/api/artist?${new URLSearchParams({ id: artist.id, country: artist.country || results?.country || country })}`, data => {
+    void load(`/api/artist?${new URLSearchParams({ id: artist.id, country: artist.country || results?.country || country })}`, data => {
       setDetail(data); setTimeout(() => heading.current?.focus(), 0);
     });
   }

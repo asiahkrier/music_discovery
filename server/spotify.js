@@ -1,10 +1,14 @@
+import { randomInt } from 'node:crypto';
 import { normalizeTags } from './genres.js';
 const idPattern = /^[A-Za-z0-9]{22}$/;
 export const validId = id => typeof id === 'string' && idPattern.test(id);
+function artist(a) {
+  return { id: a.id, spotifyId: a.id, name: a.name, tags: normalizeTags(a.genres || []), rawGenres: a.genres || [], image: a.images?.[0]?.url || '', imageSource: `https://open.spotify.com/artist/${a.id}`, url: `https://open.spotify.com/artist/${a.id}`, spotifyEmbed: `https://open.spotify.com/embed/artist/${a.id}?utm_source=generator`, source: 'Spotify' };
+}
+const fail = (message, status = 502) => Object.assign(new Error(message), { status });
 export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = fetch } = {}) {
   let token, expires = 0, pending, blockedUntil = 0;
   const configured = Boolean(spotifyId && spotifySecret);
-  const fail = (message, status = 502) => Object.assign(new Error(message), { status });
   async function json(url, options = {}) {
     if (Date.now() < blockedUntil) throw fail('Spotify is busy. Please try again in a minute.', 429);
     const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(10000) });
@@ -15,19 +19,19 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
   async function accessToken() {
     if (!configured) throw fail('Connect Spotify to enable catalog search and discovery. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to the local .env file, then restart Ripple.', 503);
     if (token && Date.now() < expires) return token;
-    if (!pending) pending = json('https://accounts.spotify.com/api/token', { method: 'POST', headers: { Authorization: `Basic ${Buffer.from(`${spotifyId}:${spotifySecret}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=client_credentials' }).then(data => {
+    const encodedCredentials = Buffer.from(spotifyId + ':' + spotifySecret).toString('base64');
+    if (!pending) pending = json('https://accounts.spotify.com/api/token', { method: 'POST', headers: { Authorization: `Basic ${encodedCredentials}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=client_credentials' }).then(data => {
       if (!data.access_token) throw fail('Spotify authentication failed.');
       token = data.access_token; expires = Date.now() + Math.max(0, (data.expires_in || 3600) - 60) * 1000; return token;
     }).finally(() => { pending = null; });
     return pending;
   }
   async function api(path, params = {}) { return json(`https://api.spotify.com/v1/${path}?${new URLSearchParams(params)}`, { headers: { Authorization: `Bearer ${await accessToken()}` } }); }
-  function artist(a) {
-    return { id: a.id, spotifyId: a.id, name: a.name, tags: normalizeTags(a.genres || []), rawGenres: a.genres || [], image: a.images?.[0]?.url || '', imageSource: `https://open.spotify.com/artist/${a.id}`, url: `https://open.spotify.com/artist/${a.id}`, spotifyEmbed: `https://open.spotify.com/embed/artist/${a.id}?utm_source=generator`, source: 'Spotify' };
-  }
   async function profile(id) {
     if (configured) return artist(await api(`artists/${id}`));
-    const data = await json(`https://open.spotify.com/oembed?${new URLSearchParams({ url: `https://open.spotify.com/artist/${id}` })}`);
+    const artistUrl = `https://open.spotify.com/artist/${id}`;
+    const params = new URLSearchParams({ url: artistUrl });
+    const data = await json(`https://open.spotify.com/oembed?${params}`);
     return artist({ id, name: data.title, images: data.thumbnail_url ? [{ url: data.thumbnail_url }] : [] });
   }
   async function search(q, country, offset = 0) { const data = await api('search', { q, type: 'artist', market: country, limit: 10, offset }); return (data.artists?.items || []).filter(a => validId(a.id)).map(artist); }
@@ -37,9 +41,9 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     const promise = (async () => {
       const pool = new Map();
       // Search different scenes and depths; do not label search rank as popularity.
-      for (const genre of ['pop', 'hip-hop', 'r&b', 'k-pop', 'house', 'shoegaze', 'ambient', 'indie rock']) {
-        for (const a of await search(`genre:"${genre}"`, country, Math.floor(Math.random() * 5) * 10)) pool.set(a.id, a);
-      }
+      const genres = ['pop', 'hip-hop', 'r&b', 'k-pop', 'house', 'shoegaze', 'ambient', 'indie rock'];
+      const groups = await Promise.all(genres.map(genre => search(`genre:"${genre}"`, country, randomInt(5) * 10)));
+      for (const a of groups.flat()) pool.set(a.id, a);
       return [...pool.values()];
     })();
     if (cache.size >= 20) cache.delete(cache.keys().next().value);
@@ -50,7 +54,8 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     const current = await profile(id);
     if (!current.rawGenres.length) return { artists: [], basis: 'Spotify did not provide genre data for this artist, so Ripple cannot suggest a reliable genre match yet.' };
     const candidates = new Map();
-    for (const genre of current.rawGenres.slice(0, 2)) for (const a of await search(`genre:"${genre}"`, country)) {
+    const groups = await Promise.all(current.rawGenres.slice(0, 2).map(genre => search(`genre:"${genre}"`, country)));
+    for (const a of groups.flat()) {
       const overlap = a.rawGenres.filter(g => current.rawGenres.includes(g)).length;
       if (a.id !== id && overlap) candidates.set(a.id, { ...a, score: overlap, recommendationReason: a.tags.join(' · ') || 'musical style' });
     }

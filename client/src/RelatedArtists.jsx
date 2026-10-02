@@ -18,8 +18,8 @@ export default function RelatedArtists({ artist, country, onSelect }) {
   }, [artist.id, country, retry]);
   return <section aria-label={`Artists to explore based on ${artist.name}`}>
     <div className="section-title"><div><h2>Similar artists</h2></div></div>
-    {!data && !error && <p role="status">Finding artists with a shared genre…</p>}
-    {error && <p role="status">Recommendations are unavailable right now. <button className="back-results" onClick={() => setRetry(n => n + 1)}>Try again</button></p>}
+    {!data && !error && <output>Finding artists with a shared genre…</output>}
+    {error && <output>Recommendations are unavailable right now. <button className="back-results" onClick={() => setRetry(n => n + 1)}>Try again</button></output>}
     {data && <><p className="fine-print">{data.artists.length ? (data.basis || `Based on shared ${data.genre} tags; musical styles may vary.`) : (data.basis || 'No matching genre suggestions are available yet.')}</p><div className="discovery-cards">{data.artists.map((a, index) => <DiscoveryCard key={a.id} artist={a} index={index} onSelect={onSelect}/>)}</div></>}
   </section>;
 }

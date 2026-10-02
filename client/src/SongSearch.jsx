@@ -12,7 +12,7 @@ export default function SongSearch() {
   useEffect(() => {
     const controller = new AbortController();
     fetch('/api/song-providers', { signal: controller.signal }).then(r => {
-      if (!r.ok) throw new Error();
+      if (!r.ok) throw new Error('Could not load Spotify connection status.');
       return r.json();
     }).then(data => setProviders(data.providers)).catch(e => {
       if (e.name !== 'AbortError') setError('Could not load connected services. You can still try a search.');

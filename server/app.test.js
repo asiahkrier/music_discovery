@@ -74,3 +74,18 @@ test('HTTP routes validate input and serve Spotify-only contracts without secret
  assert.deepEqual(providers,{providers:[{id:'spotify',name:'Spotify',enabled:false}]});
  assert.ok(!JSON.stringify(profile).includes('secret'));
 });
+
+test('discovery overlaps independent searches and keeps offsets within five pages', async () => {
+ let active = 0, peak = 0;
+ const { client } = fixture(async url => {
+  const offset = Number(url.searchParams.get('offset'));
+  assert.ok([0,10,20,30,40].includes(offset));
+  active++; peak = Math.max(peak, active);
+  await new Promise(resolve => setTimeout(resolve, 5));
+  active--;
+  return response({ artists: { items: [{id,name:'SZA',genres:['pop']}] } });
+ });
+ const artists = await client.discover('US');
+ assert.equal(artists.length, 1);
+ assert.ok(peak > 1);
+});

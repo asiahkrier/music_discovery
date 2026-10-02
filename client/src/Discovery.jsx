@@ -41,8 +41,8 @@ export default function Discovery({ country, onSelect }) {
   return <section className="discovery" aria-label="Random artist discovery">
     <div className="section-title"><div><p className="eyebrow">LET CHANCE PICK YOUR NEXT SOUND</p><h2>Discover someone new</h2></div><div className="discovery-controls"><button onClick={() => setPaused(!paused)} aria-pressed={paused}>{paused ? 'Resume shuffle' : 'Pause shuffle'}</button><button onClick={() => setShown(previous => nextArtists(pool, previous))} disabled={!pool.length}>Shuffle now ↻</button></div></div>
     <p className="fine-print">{paused ? 'Shuffle paused.' : 'A new mix every 10 seconds. Pauses while you hover or use the cards.'} {notice}</p>
-    {loading && <p className="status" role="status">Finding live artists for you…</p>}
-    {error && <p className="notice" role="status">{error} <button onClick={() => setRetry(n => n + 1)}>Retry</button></p>}
+    {loading && <output className="status">Finding live artists for you…</output>}
+    {error && <output className="notice">{error} <button onClick={() => setRetry(n => n + 1)}>Retry</button></output>}
     {!loading && !error && !shown.length && <p>No discovery artists are available for this country.</p>}
     <div className="discovery-cards" onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocus={() => setInteracting(true)} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setInteracting(false); }}>
       {shown.map((a,index) => <DiscoveryCard key={a.id} artist={a} index={index} onSelect={onSelect}/>)}

@@ -35,7 +35,7 @@ flowchart LR
 - `artist()` converts metadata into Ripple's common artist contract, preserving the Spotify ID and generating the official embed URL.
 - `profile()` uses the artist API when configured, otherwise Spotify oEmbed for the supplied artist ID. There is no cross-provider identity guessing.
 - `search()` requests up to ten artists in the selected market and accepts an internal offset for discovery.
-- `discover()` sequentially searches eight broad/niche genres at varying offsets, deduplicates by ID, and caches successful pools for five minutes per country (up to 20 cache entries).
+- `discover()` searches eight broad/niche genres concurrently at varying offsets selected with Node crypto.randomInt, deduplicates by ID, and caches successful pools for five minutes per country (up to 20 cache entries).
 - `related()` searches up to two raw genres, excludes the current artist, deduplicates candidates, ranks by exact shared-genre count, and returns up to six. This is Ripple's algorithm, not Spotify's Fans also like feed. With missing genres it returns an explanatory empty result.
 - `songs()` converts up to ten Spotify track matches into titles, artist names, albums, and Spotify links.
 
