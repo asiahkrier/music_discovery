@@ -15,7 +15,6 @@
   "dependencies": {
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
-    "html-to-text": "^10.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

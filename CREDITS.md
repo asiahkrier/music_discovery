@@ -7,4 +7,8 @@ Radiohead photograph: **Radiohead at ACL, October 7, 2016**, by **ღ ℂℏ℟�
 - License: Creative Commons Attribution 2.0, https://creativecommons.org/licenses/by/2.0/
 - Display changes: cropped with CSS and reduced saturation. The original downloaded file is bundled locally for reliable demos.
 
-Other artist visuals are typographic initials, not artist photographs. Sample biographies and recommendation groups were written for this classroom demo. Live artist information and recommendations are attributed to Last.fm in the app.
+## Current Spotify demo
+
+Artist metadata and remote artwork come from Spotify. Artist cards link to the Spotify source, and playback uses Spotify's official embedded player. Ripple does not supply or host the music. Playback availability is controlled by Spotify.
+
+The bundled Radiohead image above is a legacy demo asset and is no longer referenced by the current interface. No Wikipedia or Last.fm biographies are loaded. Missing Spotify images use typographic initials.
