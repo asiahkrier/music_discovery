@@ -24,3 +24,5 @@ Errors use `{ error: "User-facing message" }`:
 - `502`: Upstream denial, failed authentication, network error, timeout, or other provider failure. A 403 denial gets an access-specific message.
 
 There is no automatic fallback to another provider. With credentials configured but rejected, artist requests also report errors rather than silently changing data sources. Expired tokens refresh on subsequent requests according to their cached expiry; there is no automatic 401 retry.
+
+`GET /api/artist-biography?id=<Spotify ID>` returns `{text, sourceUrl}` from Last.fm. Both values are empty strings when no biography is available. Loads independently from the Spotify profile/player. See [biographies](biographies.md).
