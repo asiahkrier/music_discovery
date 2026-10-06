@@ -25,4 +25,7 @@ Errors use `{ error: "User-facing message" }`:
 
 There is no automatic fallback to another provider. With credentials configured but rejected, artist requests also report errors rather than silently changing data sources. Expired tokens refresh on subsequent requests according to their cached expiry; there is no automatic 401 retry.
 
+## Artist suggestions when genres are unavailable
+
+If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.
 `GET /api/artist-biography?id=<Spotify ID>` returns `{text, sourceUrl}` from Last.fm. Both values are empty strings when no biography is available. Loads independently from the Spotify profile/player. See [biographies](biographies.md).

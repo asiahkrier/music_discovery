@@ -7,7 +7,7 @@ export function DiscoveryCard({ artist: a, index, onSelect }) {
   return <div className="discovery-tile"><button className="discovery-card" onClick={() => onSelect(a)} aria-label={`View ${a.name} profile`} style={{'--tile-hue':`${80 + index * 34}`}}>
     <ArtistPhoto artist={a} className="discovery-art" onSource={setSource}/>
     <div className="card-name"><h3>{a.name}</h3><span>↗</span></div><p>{a.tags.join(' · ') || 'Explore artist'}</p>
-    <span className="discovery-badge">{a.recommendationReason ? `Shared genre: ${a.recommendationReason}` : 'Discover on Spotify'}</span><span className="discovery-cta">View artist</span>
+    {a.recommendationReason && <span className="discovery-badge">Shared genre: {a.recommendationReason}</span>}<span className="discovery-cta">View artist</span>
   </button>{source && <a className="photo-credit" href={source} target="_blank" rel="noreferrer">Photo source & credits ↗</a>}</div>;
 }
 

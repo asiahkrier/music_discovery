@@ -36,9 +36,24 @@ test('related artists exclude self, deduplicate and require shared genres', asyn
  const {client} = fixture(url => response(url.pathname.includes('/artists/') ? {id,name:'SZA',genres:['r&b','pop']} : {artists:{items:[{id,name:'SZA',genres:['r&b']},{id:other,name:'Other',genres:['r&b']},{id:other,name:'Other',genres:['r&b']}]}}));
  const result = await client.related(id,'US'); assert.equal(result.artists.length,1); assert.equal(result.artists[0].id,other);
 });
-test('missing genres yield an honest empty result', async () => {
- const {client,calls} = fixture(() => response({id,name:'SZA'}));
- const result = await client.related(id,'US'); assert.deepEqual(result.artists,[]); assert.match(result.basis,/did not provide/); assert.equal(calls.length,2);
+test('missing genres use Spotify search suggestions with exact identity verification', async () => {
+ const {client} = fixture(url => response(url.pathname.includes('/artists/') ? {id,name:'SZA'} : {artists:{items:[{id,name:'SZA'},{id:other,name:'Other'},{id:other,name:'Other'}]}}));
+ const result = await client.related(id,'US');
+ assert.equal(result.method,'spotify-search');
+ assert.deepEqual(result.artists.map(a=>a.id),[other]);
+ assert.match(result.basis,/search suggestions/);
+});
+test('search fallback rejects an ambiguous artist identity', async () => {
+ const {client} = fixture(url => response(url.pathname.includes('/artists/') ? {id,name:'SZA'} : {artists:{items:[{id:other,name:'SZA'}]}}));
+ assert.deepEqual((await client.related(id,'US')).artists,[]);
+});
+test('empty genre candidates also fall back to Spotify search suggestions', async () => {
+ const {client} = fixture(url => {
+  if (url.pathname.includes('/artists/')) return response({id,name:'SZA',genres:['r&b']});
+  const items = url.searchParams.get('q').startsWith('genre:') ? [] : [{id,name:'SZA'},{id:other,name:'Other'}];
+  return response({artists:{items}});
+ });
+ assert.equal((await client.related(id,'US')).artists[0].id,other);
 });
 test('rate limits stop subsequent upstream calls during cooldown', async () => {
  let count=0; const {client} = fixture(() => {count++; return {ok:false,status:429,headers:{get:()=> '60'}};});
