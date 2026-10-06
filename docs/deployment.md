@@ -44,3 +44,4 @@ The server caches discovery in memory. Restarting clears that cache. There is no
 ## Artist suggestions when genres are unavailable
 
 If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.
+For the artist About section, set `LASTFM_API_KEY` in Render Environment. No shared secret is required. Deploy with the updated dependency lockfile. See [biographies](biographies.md).

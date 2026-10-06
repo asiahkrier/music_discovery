@@ -1,3 +1,4 @@
+import ArtistBiography from './ArtistBiography.jsx';
 import ArtistPlayer from './ArtistPlayer.jsx';
 import ArtistPhoto from './ArtistPhoto.jsx';
 import RelatedArtists from './RelatedArtists.jsx';
@@ -50,7 +51,7 @@ export default function ArtistSearch() {
     {results && !detail && !busy && <section className="results"><h2>{results.artists.length ? 'Choose your artist' : 'No matching artists found'}</h2><p className="fine-print">Artists can share a name. Check the genre and catalog profile to choose the right one.</p><div className="result-list">{results.artists.map(a => <button key={a.id} onClick={() => select(a)}><span>{a.name}<small className="artist-result-meta">{a.tags.join(' · ') || 'Genre unavailable'} · ID {a.id}</small></span><span>View profile ↗</span></button>)}</div>{!results.artists.length && <p>Try another spelling or country. An artist appearing on another platform does not guarantee a Spotify listing.</p>}</section>}
     {detail && <>
       <button className="back-results" onClick={() => { setDetail(null); }}>← Back to artists</button>
-      <section className="profile-banner"><div className="profile-photo"><ArtistPhoto artist={artist} className="large"/>{artist.imageSource && <a className="photo-credit" href={artist.imageSource} target="_blank" rel="noreferrer">Photo credits ↗</a>}</div><div><p className="eyebrow">ARTIST</p><h1 ref={heading} tabIndex={-1}>{artist.name}</h1><div className="tags">{artist.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div></section>
+      <section className="profile-banner"><div className="profile-photo"><ArtistPhoto artist={artist} className="large"/>{artist.imageSource && <a className="photo-credit" href={artist.imageSource} target="_blank" rel="noreferrer">Photo credits ↗</a>}</div><div><p className="eyebrow">ARTIST</p><h1 ref={heading} tabIndex={-1}>{artist.name}</h1><div className="tags">{artist.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div><ArtistBiography key={artist.id} artistId={artist.id}/></section>
       <ArtistPlayer key={`${artist.id}-${detail.country}`} detail={detail}/>
 
       <RelatedArtists key={`${artist.id}-${detail.country}`} artist={artist} country={detail.country} onSelect={select}/>

@@ -1,8 +1,10 @@
 import express from 'express';
+import { createLastfm } from './lastfm.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
-export function createApp({ fetchImpl = fetch, songOptions = {} } = {}) {
+export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '' } = {}) {
   const app = express();
+  const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
   app.disable('x-powered-by');
   const route = (path, handler) => app.get(path, async (req, res) => {
@@ -21,6 +23,12 @@ export function createApp({ fetchImpl = fetch, songOptions = {} } = {}) {
   route('/api/artist', async ({ id }, country) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
     return { artist: await spotify.profile(id), country, source: 'Spotify' };
+  });
+  route('/api/artist-biography', async ({ id }) => {
+    if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
+    if (!lastfmApiKey) return { text: '', sourceUrl: '' };
+    const artist = await spotify.profile(id);
+    return biography(artist.name);
   });
   route('/api/discover', async (_, country) => ({ artists: await spotify.discover(country), country, notice: 'Shuffled Spotify genre searches, including different result pages. This is not a popularity ranking.' }));
   route('/api/related-artists', async ({ id }, country) => {

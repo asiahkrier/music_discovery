@@ -16,3 +16,5 @@
 .profile-banner{display:flex;align-items:center;gap:32px;padding:32px;background:linear-gradient(120deg,#2c4127,#172016);border-radius:16px;margin:8px 0 32px}.profile-banner .tags{margin-top:18px}.profile-biography{max-width:850px}.profile-biography .bio{max-height:none;overflow:visible;font-size:16px}.profile-banner .profile-photo{width:200px}.profile-banner h1{overflow-wrap:anywhere}@media(max-width:550px){.profile-banner{flex-direction:column;align-items:flex-start;padding:20px}.profile-banner .profile-photo{width:150px}}
 
 output { display: block; margin-block: 1em; }
+
+.profile-banner{flex-wrap:wrap}.profile-banner>div:nth-child(2){flex:1;min-width:150px}.profile-about{flex:1.5;min-width:250px;padding-left:24px;border-left:1px solid #48543e}.profile-about h2{font-size:21px;margin:0 0 12px}.profile-about p,.profile-about output{color:#bec9b6;line-height:1.7;font-size:15px;white-space:pre-line;overflow-wrap:anywhere}.profile-about a{color:var(--lime);font-size:12px}.profile-about output{display:block}@media(max-width:800px){.profile-about{flex-basis:100%;min-width:0;padding:20px 0 0;border-left:0;border-top:1px solid #48543e}}
