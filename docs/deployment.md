@@ -33,10 +33,14 @@ Replace placeholders privately. Do not prefix these values with `VITE_` or put t
 | Connect Spotify message | Both variables must be present in the running backend environment. Restart locally or redeploy on Render. |
 | Spotify authentication/access error | Correct app credentials, owner subscription, app eligibility, and current Spotify developer restrictions. Do not share the secret in a screenshot. |
 | Artist link works but names do not | Public oEmbed can work without Web API credentials; it does not enable catalog search. |
-| No similar artists | Spotify may omit genres; Ripple cannot score a genre match without them. Check the explanatory message rather than assuming credentials guarantee suggestions. |
+| No similar artists | Spotify may omit genres; Ripple then uses identity-verified search suggestions. The fallback may still be empty if no suitable matches exist. |
 | Missing photo | Spotify supplied no artwork, or the browser failed to load it; initials are the fallback. |
 | Player unavailable | Use Reload player or Open in Spotify. Browser restrictions, region, Spotify session, and Spotify availability can affect playback. |
 | Spotify busy | Wait for the provider cooldown. Repeated retries do not bypass it. |
 | Local frontend API errors | Default backend is 3006 and Vite is 5173. Any custom `PORT` must be consistent; restart `npm run dev` after changing it. |
 
 The server caches discovery in memory. Restarting clears that cache. There is no persistent database or background music-data import.
+
+## Artist suggestions when genres are unavailable
+
+If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.

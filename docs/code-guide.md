@@ -36,7 +36,7 @@ flowchart LR
 - `profile()` uses the artist API when configured, otherwise Spotify oEmbed for the supplied artist ID. There is no cross-provider identity guessing.
 - `search()` requests up to ten artists in the selected market and accepts an internal offset for discovery.
 - `discover()` searches eight broad/niche genres concurrently at varying offsets selected with Node crypto.randomInt, deduplicates by ID, and caches successful pools for five minutes per country (up to 20 cache entries).
-- `related()` searches up to two raw genres, excludes the current artist, deduplicates candidates, ranks by exact shared-genre count, and returns up to six. This is Ripple's algorithm, not Spotify's Fans also like feed. With missing genres it returns an explanatory empty result.
+- `related()` searches up to two raw genres, excludes the current artist, deduplicates candidates, ranks by exact shared-genre count, and returns up to six. This is Ripple's algorithm, not Spotify's Fans also like feed. With missing genres it uses the identity-verified Spotify search fallback described below.
 - `songs()` converts up to ten Spotify track matches into titles, artist names, albums, and Spotify links.
 
 ## Frontend files
@@ -74,3 +74,7 @@ flowchart LR
 ## Safe extension points
 
 Add genre aliases in `server/genres.js` with tests. Modify discovery query genres or ranking in `server/spotify.js`; keep claims about similarity and popularity consistent with actual inputs. Change layout in React components and CSS without exposing credentials. New persistence or login features require their own design and are not implemented by this update.
+
+## Artist suggestions when genres are unavailable
+
+If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.

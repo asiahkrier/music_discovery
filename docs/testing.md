@@ -17,3 +17,7 @@ Before merging or releasing with real credentials, manually check:
 Automated tests do not prove Spotify app eligibility, live catalog coverage, the quality of genre recommendations, or audio playback inside Spotify's iframe. No live credentialed catalog test was possible during this update because credentials were not configured. A public SZA oEmbed request was verified during local development.
 
 The existing Trivy workflow reports dependencies but uses `exit-code: '0'`, so review counts in the artifact; a green job does not mean zero vulnerabilities. Prior sprint reports describe their own scanned commits and are not evidence for this update. SonarQube and Trivy results for this PR must be checked after CI runs.
+
+## Artist suggestions when genres are unavailable
+
+If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.
