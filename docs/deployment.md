@@ -40,3 +40,5 @@ Replace placeholders privately. Do not prefix these values with `VITE_` or put t
 | Local frontend API errors | Default backend is 3006 and Vite is 5173. Any custom `PORT` must be consistent; restart `npm run dev` after changing it. |
 
 The server caches discovery in memory. Restarting clears that cache. There is no persistent database or background music-data import.
+
+For the artist About section, set `LASTFM_API_KEY` in Render Environment. No shared secret is required. Deploy with the updated dependency lockfile. See [biographies](biographies.md).

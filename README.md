@@ -1,6 +1,6 @@
 # Ripple
 
-Ripple is a student music-discovery application built with React, Vite, Node.js, and Express. This version uses **Spotify only** for artist metadata, artwork, song search, and embedded playback.
+Ripple is a student music-discovery application built with React, Vite, Node.js, and Express. This version uses **Spotify** for artist metadata, artwork, song search, and embedded playback, plus **Last.fm** for biography summaries.
 
 ## What works
 
@@ -49,3 +49,7 @@ npm run build
 ```
 
 Submit changes through pull requests to `main`. Do not commit `.env`, `node_modules`, or `client/dist`. The existing Trivy workflow scans dependency files on pull requests and uploads reports. A successful Trivy job does not guarantee zero findings: the workflow reports vulnerabilities without failing the job for their count.
+
+## Artist About section
+
+Artist profiles now display a short Last.fm biography next to the photo and name, while Spotify continues to supply search, photos and playback. Set `LASTFM_API_KEY` on the server (Render Environment or local `.env`). A shared secret is not required. See [biography setup and limitations](docs/biographies.md).
