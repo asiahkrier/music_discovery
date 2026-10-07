@@ -1,4 +1,5 @@
 import express from 'express';
+import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
@@ -6,6 +7,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   const app = express();
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
+  const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
@@ -33,7 +35,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   route('/api/discover', async (_, country) => ({ artists: await spotify.discover(country), country, notice: 'Shuffled Spotify genre searches, including different result pages. This is not a popularity ranking.' }));
   route('/api/related-artists', async ({ id }, country) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
-    return spotify.related(id, country);
+    return related(id, country);
   });
   route('/api/songs', async ({ q }, country) => {
     if (!q) throw Object.assign(new Error('Enter a song or artist.'), { status: 400 });

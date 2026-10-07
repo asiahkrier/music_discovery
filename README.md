@@ -56,3 +56,7 @@ If Spotify omits genres or genre matching produces no candidates, Ripple searche
 ## Artist About section
 
 Artist profiles now display a short Last.fm biography next to the photo and name, while Spotify continues to supply search, photos and playback. Set `LASTFM_API_KEY` on the server (Render Environment or local `.env`). A shared secret is not required. See [biography setup and limitations](docs/biographies.md).
+
+## Similar artists update
+
+Profile recommendations now come from Last.fm's similar-artist results, matched to Spotify profiles. The former Spotify name-search fallback is removed. The existing `LASTFM_API_KEY` is reused. See [recommendation behavior and limitations](docs/recommendations.md).

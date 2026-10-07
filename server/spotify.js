@@ -50,40 +50,9 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     cache.set(country, { until: Date.now() + 300000, promise });
     try { return await promise; } catch (e) { cache.delete(country); throw e; }
   }
-  async function searchSuggestions(current, country) {
-    const matches = await search(current.name, country);
-    // Require the exact Spotify identity before treating the remaining search hits as suggestions.
-    if (!matches.some(match => match.id === current.id)) {
-      return { artists: [], basis: 'Spotify did not return a verified set of suggestions for this artist.' };
-    }
-    const candidates = new Map();
-    for (const match of matches) {
-      if (match.id !== current.id && match.name.toLowerCase() !== current.name.toLowerCase()) candidates.set(match.id, match);
-    }
-    return {
-      artists: [...candidates.values()].slice(0, 6),
-      basis: 'Artists suggested by Spotify search for ' + current.name + '. These are search suggestions, not Spotify’s Fans also like list.',
-      method: 'spotify-search',
-    };
-  }
-  async function related(id, country) {
-    const current = await profile(id);
-    if (!current.rawGenres.length) {
-      if (configured) return searchSuggestions(current, country);
-      return { artists: [], basis: 'Connect Spotify catalog access to load artist suggestions.' };
-    }
-    const candidates = new Map();
-    const groups = await Promise.all(current.rawGenres.slice(0, 2).map(genre => search(`genre:"${genre}"`, country)));
-    for (const a of groups.flat()) {
-      const overlap = a.rawGenres.filter(g => current.rawGenres.includes(g)).length;
-      if (a.id !== id && overlap) candidates.set(a.id, { ...a, score: overlap, recommendationReason: a.tags.join(' · ') || 'musical style' });
-    }
-    if (!candidates.size) return searchSuggestions(current, country);
-    return { artists: [...candidates.values()].sort((a,b) => b.score - a.score).slice(0,6), basis: 'Ripple suggestions based on shared Spotify genres; this is not Spotify’s Fans also like list.' };
-  }
   async function songs(q, country) {
     const data = await api('search', { q, type: 'track', market: country, limit: 10 });
     return (data.tracks?.items || []).filter(Boolean).map(t => ({ id: t.id, title: t.name, artist: t.artists.map(a => a.name).join(', '), album: t.album?.name, url: `https://open.spotify.com/track/${t.id}`, providerName: 'Spotify' }));
   }
-  return { configured, profile, search, discover, related, songs };
+  return { configured, profile, search, discover, songs };
 }
