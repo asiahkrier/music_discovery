@@ -54,3 +54,9 @@
 | RIPPLE-33 | Discover artist based on top artist | Story | Asiah Krier |
 | RIPPLE-34 | Save artist and songs to a library | Story | Asiah Krier |
 | RIPPLE-35 | Discover microgenres | Story | Asiah Krier |
+
+## Jira Evidence Links
+
+- **Sprint report (burnup, Sprint 2):** https://csci475project.atlassian.net/jira/software/projects/RIPPLE/boards/34/reports/burnup
+- **Backlog:** https://csci475project.atlassian.net/jira/software/projects/RIPPLE/boards/34/backlog
+- **Board (Sprint 2):** https://csci475project.atlassian.net/jira/software/projects/RIPPLE/boards/34
