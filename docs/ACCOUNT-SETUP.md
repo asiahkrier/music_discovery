@@ -25,3 +25,7 @@ Live acceptance testing is still required: create and confirm a disposable accou
 ## Profile customization
 
 Signed-in users can edit their display name (60 characters), bio (240 characters), and comma-separated favorite genres (120 characters), and upload a JPG, PNG or WebP avatar up to 2 MB. Profiles remain owner-only through RLS; avatar images are public. Database and bucket constraints enforce field and upload limits. Replacing a photo leaves the old file in storage for future cleanup. Test saving and reloading fields and images with a real account before deployment.
+
+## Saved library
+
+Artist profiles and song search results have Save/Unsave buttons with a saved indicator. My account includes Favorite artists and Saved songs, a saved-song search and Spotify previews. Real-account items are stored in `library_items` with owner-only RLS and a composite key preventing duplicates. The sample preview library is temporary. Test saving/unsaving, reload persistence and isolation with two real accounts before marking this feature Done.

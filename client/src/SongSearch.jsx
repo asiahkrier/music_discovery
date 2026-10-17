@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { SaveButton } from './AccountContext.jsx';
 
 export default function SongSearch() {
   const [query, setQuery] = useState('');
@@ -56,6 +57,7 @@ export default function SongSearch() {
         <div className="song-results">{result.songs.map(song => <article className="song-result" key={song.id}>
           <span className="eyebrow">{song.providerName}</span><h3>{song.title}</h3><p>{song.artist}</p>{song.album && <p className="fine-print">{song.album}</p>}
           <a href={song.url} target="_blank" rel="noopener noreferrer">Open in {song.providerName} ↗</a>
+          <SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: '' }}/>
         </article>)}</div>
       </>}
     </div>
