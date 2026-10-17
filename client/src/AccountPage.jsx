@@ -19,7 +19,9 @@ function AuthForm() {
     submitting.current = true;
     setBusy(true);
     try {
-      if (!login) await checkUsernameAvailable(supabase, values.username);
+      if (!login) {
+        await checkUsernameAvailable(supabase, values.username);
+      }
       const credentials = { email: values.email.trim(), password: values.password };
       const { data, error: e } = login ? await supabase.auth.signInWithPassword(credentials) : await supabase.auth.signUp({ ...credentials, options: { data: { username: values.username.trim().toLowerCase() }, emailRedirectTo: `${window.location.origin}/?view=account` } });
       if (e) {
@@ -30,7 +32,9 @@ function AuthForm() {
         }
         throw e;
       }
-      if (!data.session) setMessage('Check your email to confirm your account. If you already have an account, log in instead.');
+      if (!data.session) {
+        setMessage('Check your email to confirm your account. If you already have an account, log in instead.');
+      }
       event.target.reset();
     } catch (e) { setError(e.message); }
     finally { submitting.current = false; setBusy(false); }
@@ -45,10 +49,10 @@ function AuthForm() {
         <label>Password<div className="password-field"><input name="password" type={visible ? 'text' : 'password'} required minLength={login ? 1 : 12} autoComplete={login ? 'current-password' : 'new-password'} placeholder="Enter your password"/><button type="button" onClick={() => setVisible(v => !v)} aria-label={visible ? 'Hide password' : 'Show password'}>{visible ? 'Hide' : 'Show'}</button></div>{!login && <small>Use at least 12 characters.</small>}</label>
         {!login && <label>Confirm password<input name="confirm" type={visible ? 'text' : 'password'} autoComplete="new-password" required placeholder="Enter your password again"/></label>}
         {error && <p className="notice error" role="alert">{error}</p>}{message && <output>{message}</output>}
-        <button className="account-primary" disabled={busy}>{busy ? 'Please wait…' : login ? 'Log in' : 'Create account'}</button>
+        <button type="submit" className="account-primary" disabled={busy}>{busy ? 'Please wait…' : login ? 'Log in' : 'Create account'}</button>
       </form>
-      <p className="auth-switch">{login ? 'New to Ripple?' : 'Already have an account?'} <button onClick={() => { setLogin(v => !v); setError(''); setMessage(''); }}>{login ? 'Create account' : 'Log in'}</button></p>
-      {import.meta.env.DEV && <><button className="account-button demo-button" onClick={startDemo}>Preview profile with sample content ↗</button><p className="fine-print">Preview mode uses temporary sample data. It does not create an account or store a password.</p></>}
+      <p className="auth-switch">{login ? 'New to Ripple?' : 'Already have an account?'} <button type="button" onClick={() => { setLogin(v => !v); setError(''); setMessage(''); }}>{login ? 'Create account' : 'Log in'}</button></p>
+      {import.meta.env.DEV && <><button type="button" className="account-button demo-button" onClick={startDemo}>Preview profile with sample content ↗</button><p className="fine-print">Preview mode uses temporary sample data. It does not create an account or store a password.</p></>}
     </section>
   </div>;
 }
@@ -67,8 +71,8 @@ function Profile() {
     <h1>{account.profile ? `Welcome, ${account.profile.username}` : 'Your account'}</h1>
     {account.demo && <p className="preview-notice">Preview mode · Temporary sample account.</p>}
     <output>{account.loading ? 'Loading your profile…' : account.error || 'You are signed in.'}</output>
-    <button className="account-button" disabled={busy} onClick={() => void logout()}>{account.demo ? 'Exit preview' : 'Log out'}</button>
+    <button type="button" className="account-button" disabled={busy} onClick={() => void logout()}>{account.demo ? 'Exit preview' : 'Log out'}</button>
     {error && <p role="alert">{error}</p>}
   </section>;
 }
-export default function AccountPage() { const { user, loading, startDemo } = useAccount(); useEffect(() => { if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'profile') { const timer = setTimeout(startDemo, 0); return () => clearTimeout(timer); } }, []); if (loading && !user) return <output>Checking your session…</output>; return user ? <Profile/> : <AuthForm/>; }
+export default function AccountPage() { const { user, loading, startDemo } = useAccount(); useEffect(() => { if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'profile') { const timer = setTimeout(startDemo, 0); return () => clearTimeout(timer); } }, [startDemo]); if (loading && !user) return <output>Checking your session…</output>; return user ? <Profile/> : <AuthForm/>; }

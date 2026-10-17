@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { supabase } from './account-client.js';
 
 const Context = createContext(null);
@@ -30,14 +30,15 @@ export function AccountProvider({ children }) {
       .finally(() => { if (generation.current === version) setLoading(false); });
     return () => { generation.current++; };
   }, [user, demo]);
-  function startDemo() {
+  const startDemo = useCallback(() => {
     setDemo(true); setUser({ id: 'preview' }); setError(''); setLoading(false);
     setProfile({ username: 'israelmr27', display_name: 'Israel', bio: 'Always looking for my next favorite sound.', avatar_url: '', genres: 'R&B, Pop, K-pop' });
-  }
-  async function signOut() {
+  }, []);
+  const signOut = useCallback(async () => {
     if (!demo && supabase) { const { error: e } = await supabase.auth.signOut(); if (e) throw e; }
     generation.current++; setDemo(false); setUser(null); setProfile(null);
-  }
-  return <Context.Provider value={{ user, demo, profile, error, loading, startDemo, signOut }}>{children}</Context.Provider>;
+  }, [demo]);
+  const value = useMemo(() => ({ user, demo, profile, error, loading, startDemo, signOut }), [user, demo, profile, error, loading, startDemo, signOut]);
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useAccount() { return useContext(Context); }
