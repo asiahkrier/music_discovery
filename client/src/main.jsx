@@ -10,7 +10,7 @@ import './account.css';
 function App() {
   const [view, setView] = useState(new URLSearchParams(window.location.search).get('view') === 'account' ? 'account' : 'artists');
   return <div className="app">
-    <header><a className="brand" href="/" aria-label="Ripple home"><span className="logo">≋</span> Ripple</a><div className="header-links"><button type="button" onClick={() => setView('artists')}>Discover</button><button type="button" className="account-button" onClick={() => setView('account')}>My account</button></div></header>
+    <header><a className="brand" href="/" aria-label="Ripple home"><img className="logo-img" src="/ripple-logo.png" alt="" /> Ripple</a><div className="header-links"><button type="button" onClick={() => setView('artists')}>Discover</button><button type="button" className="account-button" onClick={() => setView('account')}>My account</button></div></header>
     <main>
       {view !== 'account' && <nav className="search-tabs" aria-label="Discovery mode"><button type="button" aria-pressed={view === 'artists'} onClick={() => setView('artists')}>Artists</button><button type="button" aria-pressed={view === 'songs'} onClick={() => setView('songs')}>Songs</button></nav>}
       {view === 'artists' && <ArtistSearch/>}{view === 'songs' && <SongSearch/>}{view === 'account' && <AccountPage/>}
