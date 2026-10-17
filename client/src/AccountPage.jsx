@@ -19,7 +19,9 @@ function AuthForm() {
     submitting.current = true;
     setBusy(true);
     try {
-      if (!login) await checkUsernameAvailable(supabase, values.username);
+      if (!login) {
+        await checkUsernameAvailable(supabase, values.username);
+      }
       const credentials = { email: values.email.trim(), password: values.password };
       const { data, error: e } = login ? await supabase.auth.signInWithPassword(credentials) : await supabase.auth.signUp({ ...credentials, options: { data: { username: values.username.trim().toLowerCase() }, emailRedirectTo: `${window.location.origin}/?view=account` } });
       if (e) {
@@ -30,7 +32,9 @@ function AuthForm() {
         }
         throw e;
       }
-      if (!data.session) setMessage('Check your email to confirm your account. If you already have an account, log in instead.');
+      if (!data.session) {
+        setMessage('Check your email to confirm your account. If you already have an account, log in instead.');
+      }
       event.target.reset();
     } catch (e) { setError(e.message); }
     finally { submitting.current = false; setBusy(false); }
@@ -45,10 +49,10 @@ function AuthForm() {
         <label>Password<div className="password-field"><input name="password" type={visible ? 'text' : 'password'} required minLength={login ? 1 : 12} autoComplete={login ? 'current-password' : 'new-password'} placeholder="Enter your password"/><button type="button" onClick={() => setVisible(v => !v)} aria-label={visible ? 'Hide password' : 'Show password'}>{visible ? 'Hide' : 'Show'}</button></div>{!login && <small>Use at least 12 characters.</small>}</label>
         {!login && <label>Confirm password<input name="confirm" type={visible ? 'text' : 'password'} autoComplete="new-password" required placeholder="Enter your password again"/></label>}
         {error && <p className="notice error" role="alert">{error}</p>}{message && <output>{message}</output>}
-        <button className="account-primary" disabled={busy}>{busy ? 'Please wait…' : login ? 'Log in' : 'Create account'}</button>
+        <button type="submit" className="account-primary" disabled={busy}>{busy ? 'Please wait…' : login ? 'Log in' : 'Create account'}</button>
       </form>
-      <p className="auth-switch">{login ? 'New to Ripple?' : 'Already have an account?'} <button onClick={() => { setLogin(v => !v); setError(''); setMessage(''); }}>{login ? 'Create account' : 'Log in'}</button></p>
-      {import.meta.env.DEV && <><button className="account-button demo-button" onClick={startDemo}>Preview profile with sample content ↗</button><p className="fine-print">Preview mode uses temporary sample data. It does not create an account or store a password.</p></>}
+      <p className="auth-switch">{login ? 'New to Ripple?' : 'Already have an account?'} <button type="button" onClick={() => { setLogin(v => !v); setError(''); setMessage(''); }}>{login ? 'Create account' : 'Log in'}</button></p>
+      {import.meta.env.DEV && <><button type="button" className="account-button demo-button" onClick={startDemo}>Preview profile with sample content ↗</button><p className="fine-print">Preview mode uses temporary sample data. It does not create an account or store a password.</p></>}
     </section>
   </div>;
 }
@@ -61,15 +65,18 @@ function Profile() {
     event.preventDefault(); const fields = Object.fromEntries(new FormData(event.currentTarget));
     await run(async () => { await account.saveProfile(fields); setEditing(false); setNotice('Profile saved.'); });
   }
-  if (!profile) return <div className="account-panel"><h1>Your profile</h1><output>{account.loading ? 'Loading your profile…' : account.error || 'Your profile is not available yet.'}</output><button className="account-button" onClick={() => void run(account.signOut)}>Log out</button>{error && <p role="alert">{error}</p>}</div>;
+  if (!profile) return <div className="account-panel"><h1>Your profile</h1><output>{account.loading ? 'Loading your profile…' : account.error || 'Your profile is not available yet.'}</output><button type="button" className="account-button" onClick={() => void run(account.signOut)}>Log out</button>{error && <p role="alert">{error}</p>}</div>;
   return <div className="user-profile">
     {demo && <p className="preview-notice">Preview mode · Sample profile. Changes last until you leave or reload this preview.</p>}
-    <section className="user-banner"><div className="avatar-column"><div className="user-avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="Your profile"/> : <span>≋</span>}</div><label className="account-button upload-label">{busy ? 'Please wait…' : 'Change photo'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { const file = e.target.files?.[0]; if (file) void run(() => account.uploadPhoto(file)); e.target.value = ''; }}/></label><small>JPG, PNG or WebP · Up to 2 MB</small></div>
-      <div className="user-identity"><p className="eyebrow">MY PROFILE</p><h1>{profile.display_name || profile.username}</h1><p className="account-muted">@{profile.username}</p><p>{profile.bio || 'Add a little about your taste in music.'}</p><div className="tags">{(profile.genres || '').split(',').filter(g => g.trim()).map((g, index) => <span key={index}>{g.trim()}</span>)}</div></div>
-      <div className="profile-actions"><button className="account-button" onClick={() => setEditing(v => !v)}>{editing ? 'Cancel editing' : 'Edit profile'}</button><button className="account-button" disabled={busy} onClick={() => void run(account.signOut)}>{demo ? 'Exit preview' : 'Log out'}</button></div>
+    <section className="user-banner"><div className="avatar-column"><div className="user-avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="Your profile"/> : <span>≋</span>}</div><label className="account-button upload-label">{busy ? 'Please wait…' : 'Change photo'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { const file = e.target.files?.[0]; if (file) {
+        void run(() => account.uploadPhoto(file));
+      }
+      e.target.value = ''; }}/></label><small>JPG, PNG or WebP · Up to 2 MB</small></div>
+      <div className="user-identity"><p className="eyebrow">MY PROFILE</p><h1>{profile.display_name || profile.username}</h1><p className="account-muted">@{profile.username}</p><p>{profile.bio || 'Add a little about your taste in music.'}</p><div className="tags">{[...new Set((profile.genres || '').split(',').map(genre => genre.trim()).filter(Boolean))].map(genre => <span key={genre}>{genre}</span>)}</div></div>
+      <div className="profile-actions"><button type="button" className="account-button" onClick={() => setEditing(v => !v)}>{editing ? 'Cancel editing' : 'Edit profile'}</button><button type="button" className="account-button" disabled={busy} onClick={() => void run(account.signOut)}>{demo ? 'Exit preview' : 'Log out'}</button></div>
     </section>
     {error && <p className="notice error" role="alert">{error}</p>}{notice && <output>{notice}</output>}
-    {editing && <form className="account-panel account-form edit-profile" onSubmit={e => void edit(e)}><h2>Edit your profile</h2><label>Display name<input name="display_name" defaultValue={profile.display_name} maxLength={60} required/></label><label>Short bio<textarea name="bio" defaultValue={profile.bio} maxLength={240} rows={3}/></label><label>Favorite genres<input name="genres" defaultValue={profile.genres} maxLength={120} placeholder="R&B, Pop, K-pop"/></label><button className="account-primary" disabled={busy}>Save changes</button></form>}
+    {editing && <form className="account-panel account-form edit-profile" onSubmit={e => void edit(e)}><h2>Edit your profile</h2><label>Display name<input name="display_name" defaultValue={profile.display_name} maxLength={60} required/></label><label>Short bio<textarea name="bio" defaultValue={profile.bio} maxLength={240} rows={3}/></label><label>Favorite genres<input name="genres" defaultValue={profile.genres} maxLength={120} placeholder="R&B, Pop, K-pop"/></label><button type="submit" className="account-primary" disabled={busy}>Save changes</button></form>}
   </div>;
 }
-export default function AccountPage() { const { user, loading, startDemo } = useAccount(); useEffect(() => { if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'profile') { const timer = setTimeout(startDemo, 0); return () => clearTimeout(timer); } }, []); if (loading && !user) return <output>Checking your session…</output>; return user ? <Profile/> : <AuthForm/>; }
+export default function AccountPage() { const { user, loading, startDemo } = useAccount(); useEffect(() => { if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'profile') { const timer = setTimeout(startDemo, 0); return () => clearTimeout(timer); } }, [startDemo]); if (loading && !user) return <output>Checking your session…</output>; return user ? <Profile/> : <AuthForm/>; }
