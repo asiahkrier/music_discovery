@@ -38,7 +38,28 @@ export function AccountProvider({ children }) {
     if (!demo && supabase) { const { error: e } = await supabase.auth.signOut(); if (e) throw e; }
     generation.current++; setDemo(false); setUser(null); setProfile(null);
   }, [demo]);
-  const value = useMemo(() => ({ user, demo, profile, error, loading, startDemo, signOut }), [user, demo, profile, error, loading, startDemo, signOut]);
+  const saveProfile = useCallback(async (changes) => {
+    if (!user) throw new Error('Please log in first.');
+    if (!demo) {
+      const { error: e } = await supabase.from('profiles').update(changes).eq('id', user.id);
+      if (e) throw new Error('Could not save your profile. Please try again.');
+    }
+    setProfile(p => ({ ...p, ...changes }));
+  }, [user, demo]);
+  const uploadPhoto = useCallback(async (file) => {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2 * 1024 * 1024) throw new Error('Choose a JPG, PNG, or WebP image under 2 MB.');
+    if (demo) {
+      const image = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('Could not read photo.')); reader.readAsDataURL(file); });
+      await saveProfile({ avatar_url: image }); return;
+    }
+    const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
+    const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+    const { error: e } = await supabase.storage.from('avatars').upload(path, file);
+    if (e) throw new Error('Photo upload failed. Check the avatars bucket setup.');
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    await saveProfile({ avatar_url: data.publicUrl });
+  }, [user, demo, saveProfile]);
+  const value = useMemo(() => ({ user, demo, profile, error, loading, startDemo, signOut, saveProfile, uploadPhoto }), [user, demo, profile, error, loading, startDemo, signOut, saveProfile, uploadPhoto]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useAccount() { return useContext(Context); }

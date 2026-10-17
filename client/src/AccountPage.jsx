@@ -58,21 +58,25 @@ function AuthForm() {
 }
 
 function Profile() {
-  const account = useAccount();
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  async function logout() {
-    setBusy(true); setError('');
-    try { await account.signOut(); } catch (error) { setError(error.message); }
-    finally { setBusy(false); }
+  const account = useAccount(); const { profile, demo } = account;
+  const [editing, setEditing] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
+  async function run(action) { setBusy(true); setError(''); setNotice(''); try { await action(); } catch (e) { setError(e.message); } finally { setBusy(false); } }
+  async function edit(event) {
+    event.preventDefault(); const fields = Object.fromEntries(new FormData(event.currentTarget));
+    await run(async () => { await account.saveProfile(fields); setEditing(false); setNotice('Profile saved.'); });
   }
-  return <section className="account-panel">
-    <p className="eyebrow">MY ACCOUNT</p>
-    <h1>{account.profile ? `Welcome, ${account.profile.username}` : 'Your account'}</h1>
-    {account.demo && <p className="preview-notice">Preview mode · Temporary sample account.</p>}
-    <output>{account.loading ? 'Loading your profile…' : account.error || 'You are signed in.'}</output>
-    <button type="button" className="account-button" disabled={busy} onClick={() => void logout()}>{account.demo ? 'Exit preview' : 'Log out'}</button>
-    {error && <p role="alert">{error}</p>}
-  </section>;
+  if (!profile) return <div className="account-panel"><h1>Your profile</h1><output>{account.loading ? 'Loading your profile…' : account.error || 'Your profile is not available yet.'}</output><button type="button" className="account-button" onClick={() => void run(account.signOut)}>Log out</button>{error && <p role="alert">{error}</p>}</div>;
+  return <div className="user-profile">
+    {demo && <p className="preview-notice">Preview mode · Sample profile. Changes last until you leave or reload this preview.</p>}
+    <section className="user-banner"><div className="avatar-column"><div className="user-avatar">{profile.avatar_url ? <img src={profile.avatar_url} alt="Your profile"/> : <span>≋</span>}</div><label className="account-button upload-label">{busy ? 'Please wait…' : 'Change photo'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { const file = e.target.files?.[0]; if (file) {
+        void run(() => account.uploadPhoto(file));
+      }
+      e.target.value = ''; }}/></label><small>JPG, PNG or WebP · Up to 2 MB</small></div>
+      <div className="user-identity"><p className="eyebrow">MY PROFILE</p><h1>{profile.display_name || profile.username}</h1><p className="account-muted">@{profile.username}</p><p>{profile.bio || 'Add a little about your taste in music.'}</p><div className="tags">{[...new Set((profile.genres || '').split(',').map(genre => genre.trim()).filter(Boolean))].map(genre => <span key={genre}>{genre}</span>)}</div></div>
+      <div className="profile-actions"><button type="button" className="account-button" onClick={() => setEditing(v => !v)}>{editing ? 'Cancel editing' : 'Edit profile'}</button><button type="button" className="account-button" disabled={busy} onClick={() => void run(account.signOut)}>{demo ? 'Exit preview' : 'Log out'}</button></div>
+    </section>
+    {error && <p className="notice error" role="alert">{error}</p>}{notice && <output>{notice}</output>}
+    {editing && <form className="account-panel account-form edit-profile" onSubmit={e => void edit(e)}><h2>Edit your profile</h2><label>Display name<input name="display_name" defaultValue={profile.display_name} maxLength={60} required/></label><label>Short bio<textarea name="bio" defaultValue={profile.bio} maxLength={240} rows={3}/></label><label>Favorite genres<input name="genres" defaultValue={profile.genres} maxLength={120} placeholder="R&B, Pop, K-pop"/></label><button type="submit" className="account-primary" disabled={busy}>Save changes</button></form>}
+  </div>;
 }
 export default function AccountPage() { const { user, loading, startDemo } = useAccount(); useEffect(() => { if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'profile') { const timer = setTimeout(startDemo, 0); return () => clearTimeout(timer); } }, [startDemo]); if (loading && !user) return <output>Checking your session…</output>; return user ? <Profile/> : <AuthForm/>; }
