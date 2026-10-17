@@ -2,10 +2,18 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { supabase } from './account-client.js';
 
 const Context = createContext(null);
+const sampleLibrary = [
+  { kind: 'artist', spotify_id: '7tYKF4w9nC0nq9CsPZTHyP', name: 'SZA', subtitle: 'R&B', image: '' },
+  { kind: 'artist', spotify_id: '4q3ewBCX7sLwd24euuV69X', name: 'Bad Bunny', subtitle: 'Latin', image: '' },
+  { kind: 'artist', spotify_id: '6YVMFz59CuY7ngCxTxjpxE', name: 'aespa', subtitle: 'K-pop', image: '' },
+  { kind: 'song', spotify_id: '4iZ4pt7kvcaH6Yo8UoZ4s2', name: 'Snooze', subtitle: 'SZA', image: '' },
+];
+
 export function AccountProvider({ children }) {
   const [user, setUser] = useState(null);
   const [demo, setDemo] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [library, setLibrary] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(Boolean(supabase));
   const generation = useRef(0);
@@ -19,13 +27,16 @@ export function AccountProvider({ children }) {
   useEffect(() => {
     const version = ++generation.current;
     if (demo) return undefined;
-    setProfile(null); setError('');
+    setProfile(null); setLibrary([]); setError('');
     if (!user || !supabase) return undefined;
     setLoading(true);
-    supabase.from('profiles').select('*').eq('id', user.id).single().then(p => {
+    Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('library_items').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    ]).then(([p, l]) => {
       if (generation.current !== version) return;
-      if (p.error) throw new Error('Could not load your profile. Please reload and try again.');
-      setProfile(p.data);
+      if (p.error || l.error) throw new Error('Could not load your profile. Check the Supabase setup, then reload.');
+      setProfile(p.data); setLibrary(l.data);
     }).catch(e => { if (generation.current === version) setError(e.message); })
       .finally(() => { if (generation.current === version) setLoading(false); });
     return () => { generation.current++; };
@@ -33,10 +44,11 @@ export function AccountProvider({ children }) {
   const startDemo = useCallback(() => {
     setDemo(true); setUser({ id: 'preview' }); setError(''); setLoading(false);
     setProfile({ username: 'israelmr27', display_name: 'Israel', bio: 'Always looking for my next favorite sound.', avatar_url: '', genres: 'R&B, Pop, K-pop' });
+    setLibrary(sampleLibrary.map(item => ({ ...item })));
   }, []);
   const signOut = useCallback(async () => {
     if (!demo && supabase) { const { error: e } = await supabase.auth.signOut(); if (e) throw e; }
-    generation.current++; setDemo(false); setUser(null); setProfile(null);
+    generation.current++; setDemo(false); setUser(null); setProfile(null); setLibrary([]);
   }, [demo]);
   const saveProfile = useCallback(async (changes) => {
     if (!user) throw new Error('Please log in first.');
@@ -59,7 +71,25 @@ export function AccountProvider({ children }) {
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     await saveProfile({ avatar_url: data.publicUrl });
   }, [user, demo, saveProfile]);
-  const value = useMemo(() => ({ user, demo, profile, error, loading, startDemo, signOut, saveProfile, uploadPhoto }), [user, demo, profile, error, loading, startDemo, signOut, saveProfile, uploadPhoto]);
+  const toggleItem = useCallback(async (item) => {
+    if (!user) throw new Error('Create an account or log in to save your favorites.');
+    const exists = library.some(i => i.kind === item.kind && i.spotify_id === item.spotify_id);
+    if (!demo) {
+      const table = supabase.from('library_items');
+      const result = exists ? await table.delete().eq('user_id', user.id).eq('kind', item.kind).eq('spotify_id', item.spotify_id)
+        : await table.upsert({ ...item, user_id: user.id }, { onConflict: 'user_id,kind,spotify_id' });
+      if (result.error) throw new Error('Could not update your library. Please try again.');
+    }
+    setLibrary(items => exists ? items.filter(i => i.kind !== item.kind || i.spotify_id !== item.spotify_id) : [...items, item]);
+  }, [user, demo, library]);
+  const value = useMemo(() => ({ user, demo, profile, library, error, loading, startDemo, signOut, saveProfile, uploadPhoto, toggleItem }), [user, demo, profile, library, error, loading, startDemo, signOut, saveProfile, uploadPhoto, toggleItem]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export function useAccount() { return useContext(Context); }
+
+export function SaveButton({ item }) {
+  const account = useAccount(); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const saved = account.library.some(i => i.kind === item.kind && i.spotify_id === item.spotify_id);
+  async function toggle() { setBusy(true); setError(''); try { await account.toggleItem(item); } catch (e) { setError(e.message); } finally { setBusy(false); } }
+  return <div><button type="button" className="account-button" disabled={busy} aria-pressed={saved} onClick={() => void toggle()}>{saved ? '♥ Saved' : '♡ Save'}{item.kind === 'artist' ? ' artist' : ' song'}</button>{error && <p role="alert">{error}</p>}</div>;
+}
