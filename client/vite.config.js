@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
+  envDir: fileURLToPath(new URL('..', import.meta.url)),
   plugins: [react()],
   server: { host: '127.0.0.1', port: 5173, strictPort: true,
     proxy: { '/api': `http://127.0.0.1:${process.env.PORT || 3006}` } },
