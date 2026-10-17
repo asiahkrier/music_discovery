@@ -18,3 +18,4 @@
 output { display: block; margin-block: 1em; }
 
 .profile-banner{flex-wrap:wrap}.profile-banner>div:nth-child(2){flex:1;min-width:150px}.profile-about{flex:1.5;min-width:250px;padding-left:24px;border-left:1px solid #48543e}.profile-about h2{font-size:21px;margin:0 0 12px}.profile-about p,.profile-about output{color:#bec9b6;line-height:1.7;font-size:15px;white-space:pre-line;overflow-wrap:anywhere}.profile-about a{color:var(--lime);font-size:12px}.profile-about output{display:block}@media(max-width:800px){.profile-about{flex-basis:100%;min-width:0;padding:20px 0 0;border-left:0;border-top:1px solid #48543e}}
+.logo-img{width:93px;height:93px;margin-right:8px;display:block}
