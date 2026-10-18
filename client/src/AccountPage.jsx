@@ -404,9 +404,7 @@ function Profile() {
           {artists.map((artist, index) => (
             <article key={artist.spotify_id} className="favorite-card">
               <a
-                href={`https://open.spotify.com/artist/${artist.spotify_id}`}
-                target="_blank"
-                rel="noreferrer"
+                href={`/?artist=${encodeURIComponent(artist.spotify_id)}`}
               >
                 <div className={`favorite-art art-${index % 3}`}>
                   {artist.image ? (

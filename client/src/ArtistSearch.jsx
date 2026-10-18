@@ -39,6 +39,12 @@ export default function ArtistSearch() {
       setDetail(data); setTimeout(() => heading.current?.focus(), 0);
     });
   }
+  useEffect(() => {
+    const artistId = new URLSearchParams(window.location.search).get('artist');
+    if (artistId) {
+      select({ id: artistId });
+    }
+  }, []);
   const artist = detail?.artist;
   return <section aria-label="Live artist discovery">
     {!detail && <><div className="intro"><div><p className="eyebrow">A NEW WAY TO WANDER</p><h1>Follow your sound<span>.</span></h1><p>Mainstream, underground, and everything in between.</p></div><span className="mode">Live artist catalog</span></div>

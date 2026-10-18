@@ -3,6 +3,7 @@ import { SaveButton } from './AccountContext.jsx';
 
 export default function SongSearch() {
   const [query, setQuery] = useState('');
+  const [previewId, setPreviewId] = useState(null);
   const [provider, setProvider] = useState('spotify');
   const [country, setCountry] = useState('US');
   const [providers, setProviders] = useState([]);
@@ -25,6 +26,7 @@ export default function SongSearch() {
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
+    setPreviewId(null);
     setResult(null); setError(''); setBusy(true);
     try {
       const response = await fetch(`/api/songs?${new URLSearchParams({ q: query.trim(), provider, country })}`, { signal: controller.signal });
@@ -47,7 +49,7 @@ export default function SongSearch() {
       </div>
       <div className="search"><label className="sr-only" htmlFor="song-query">Song title or artist</label><span aria-hidden="true">⌕</span><input id="song-query" value={query} onChange={e => setQuery(e.target.value)} maxLength={100} required placeholder="Song title or artist…"/><button type="submit">Find songs ↗</button></div>
     </form>
-    <p className="fine-print">Connected: {providers.filter(p => p.enabled).map(p => p.name).join(', ') || 'checking…'}. Open a result to listen on its service.</p>
+    <p className="fine-print">Connected: {providers.filter(p => p.enabled).map(p => p.name).join(', ') || 'checking…'}. Select Preview to listen here. Playback availability depends on Spotify.</p>
     <div aria-live="polite" aria-busy={busy}>
       {busy && <p className="status">Searching music catalogs…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
@@ -56,7 +58,10 @@ export default function SongSearch() {
         {!result.songs.length && <p>No matching songs found in the services searched. Try the artist and song title together, or another country.</p>}
         <div className="song-results">{result.songs.map(song => <article className="song-result" key={song.id}>
           <span className="eyebrow">{song.providerName}</span><h3>{song.title}</h3><p>{song.artist}</p>{song.album && <p className="fine-print">{song.album}</p>}
-          <a href={song.url} target="_blank" rel="noopener noreferrer">Open in {song.providerName} ↗</a>
+          <button type="button" aria-expanded={previewId === song.id} onClick={() => setPreviewId(previous => previous === song.id ? null : song.id)}>
+            {previewId === song.id ? 'Close preview' : 'Preview song'}
+          </button>
+          {previewId === song.id && <iframe title={`${song.title} Spotify preview`} src={`https://open.spotify.com/embed/track/${encodeURIComponent(song.id)}`} width="100%" height="152" style={{ border: 0, borderRadius: 12 }} allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"/>}
           <SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: '' }}/>
         </article>)}</div>
       </>}
