@@ -11,7 +11,12 @@ export default function AllTimeTopSongs({ artist, country }) {
     setData(null);
     setCurrent(null);
     fetch(`/api/top-tracks?${new URLSearchParams({ id: artist.id, country })}`, { signal: controller.signal })
-      .then(response => { if (!response.ok) throw new Error('Top songs unavailable'); return response.json(); })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Top songs unavailable');
+        }
+        return response.json();
+      })
       .then(result => { if (!controller.signal.aborted) setData(result); })
       .catch(() => { if (!controller.signal.aborted) setData({ tracks: [] }); });
     return () => controller.abort();
@@ -34,10 +39,14 @@ export default function AllTimeTopSongs({ artist, country }) {
       {data && !data.tracks.length && <p className="atp-status">All-time rankings aren’t available for this artist yet.</p>}
       {data?.tracks.length > 0 && <ol className="atp-list">{data.tracks.map((track, index) => {
         const active = track.spotifyId && track.spotifyId === current;
+        const playbackAction = active ? 'Close' : 'Play';
+        const trackLabel = track.spotifyId
+          ? `${playbackAction} ${track.title}`
+          : `${track.title} is not available on Spotify`;
         return <li key={track.title}>
           <button type="button" className={`atp-row${active ? ' active' : ''}`} disabled={!track.spotifyId}
             onClick={() => setCurrent(active ? null : track.spotifyId)}
-            aria-label={track.spotifyId ? `${active ? 'Close' : 'Play'} ${track.title}` : `${track.title} is not available on Spotify`}>
+            aria-label={trackLabel}>
             <span className="atp-num"><span className="atp-index">{index + 1}</span><span className="atp-play" aria-hidden="true">{active ? '❚❚' : '▶'}</span></span>
             <span className="atp-text"><strong title={track.title}>{track.title}</strong><small>{track.spotifyId ? artist.name : 'Not on Spotify'} · {track.listeners.toLocaleString()} listeners</small></span>
             <span className="atp-time">{duration(track.durationMs)}</span>
