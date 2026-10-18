@@ -1,6 +1,7 @@
 import express from 'express';
 import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
+import { createTopTracks } from './top-tracks.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
 export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '' } = {}) {
@@ -8,6 +9,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
   const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
+  const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
@@ -25,6 +27,10 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   route('/api/artist', async ({ id }, country) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
     return { artist: await spotify.profile(id), country, source: 'Spotify' };
+  });
+  route('/api/top-tracks', async ({ id }, country) => {
+    if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
+    return topTracks(id, country);
   });
   route('/api/artist-biography', async ({ id }) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
