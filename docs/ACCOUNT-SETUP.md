@@ -6,7 +6,7 @@ The My account header button opens signup/login. Usernames use 3–24 letters, n
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the root `.env` for local development and in Render before the build. These values are embedded by Vite at build time; rebuild after changing them. Never use a secret/service-role key for a VITE variable. `.env` is ignored by Git.
 
-For a new Supabase project, apply `supabase/001_accounts.sql` through `004_username_availability.sql` in numeric order. 001 includes the shared profile, avatar and library schema used by the next two feature branches. 002 and 003 preserve the migration history of the existing project; 003 removes the former age/terms gate. Do not rerun 001 on an already initialized project. The existing Ripple project already has all four migrations applied.
+For a new Supabase project, apply `supabase/001_accounts.sql` through `004_username_availability.sql` in numeric order. 001 includes the shared profile, avatar and library schema. 002 restricts avatar uploads to active profiles. The discarded birthday/age and terms-consent setup has been removed; 003 safely removes its legacy trigger/function if present and restores basic profile creation. Migration numbers remain unchanged for existing installations. Do not rerun 001 on an already initialized project. The existing Ripple project already has all four original migrations applied and does not need them rerun for this UI update. Historical consent columns may remain unused in existing databases; this cleanup does not delete stored data or change the live database.
 
 Enable email/password signup and email confirmation in Supabase Auth. Set its password minimum to 12 characters. Add local and Render origins to the Auth redirect allowlist, and configure email delivery. Confirm-email signup displays instructions rather than promising that an existing email created another account.
 
@@ -14,7 +14,7 @@ Run `npm run dev`, then open `/?view=account`. The dev-only sample profile does 
 
 ## Scope
 
-This branch adds registration, login/logout, basic profile loading and shared account styling/schema. Profile editing and saved-library controls arrive in separate dependent PRs. Account deletion, age screening, and terms/privacy screens are deferred.
+The application includes registration, login/logout, profile customization, avatar uploads and saved artists/songs. Account deletion, age screening, and terms/privacy screens are deferred.
 
 ## Validation before marking Done
 

@@ -1,6 +1,7 @@
 -- Defer age/terms requirements without deleting accounts or historical data.
 begin;
 drop trigger if exists ripple_signup_checked on auth.users;
+drop function if exists public.check_ripple_signup();
 create or replace function public.create_ripple_profile() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
