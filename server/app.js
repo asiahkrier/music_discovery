@@ -47,6 +47,10 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
     if (!q) throw Object.assign(new Error('Enter a song or artist.'), { status: 400 });
     return { songs: await spotify.songs(q, country), country, providers: [{ name: 'Spotify', status: 'ok' }] };
   });
+  route('/api/song-artwork', async ({ id }) => {
+    if (!validId(id)) throw Object.assign(new Error('Choose a Spotify song.'), { status: 400 });
+    return spotify.songArtwork(id);
+  });
   app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
   app.use(express.static(fileURLToPath(new URL('../client/dist/', import.meta.url))));
   return app;

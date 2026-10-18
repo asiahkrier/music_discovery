@@ -1,3 +1,4 @@
+import SongArtwork from './SongArtwork.jsx';
 import React, { useState, useEffect, useRef } from "react";
 import {
   supabase,
@@ -440,9 +441,7 @@ function Profile() {
         )}
         {songs.map((song) => (
           <div className="saved-song" key={song.spotify_id}>
-            <div className="song-icon" aria-hidden="true">
-              ♫
-            </div>
+            <SongArtwork key={song.spotify_id} song={song} />
             <div>
               <strong>{song.name}</strong>
               <small>{song.subtitle}</small>
