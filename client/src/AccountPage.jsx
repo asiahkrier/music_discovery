@@ -110,7 +110,7 @@ function AuthForm() {
         <form onSubmit={(e) => void submit(e)} className="account-form">
           {!login && (
             <label>
-              Username
+              <span>Username</span>
               <input
                 name="username"
                 required
@@ -124,7 +124,7 @@ function AuthForm() {
             </label>
           )}
           <label>
-            Email
+            <span>Email</span>
             <input
               name="email"
               type="email"
@@ -134,7 +134,7 @@ function AuthForm() {
             />
           </label>
           <label>
-            Password
+            <span>Password</span>
             <div className="password-field">
               <input
                 name="password"
@@ -156,7 +156,7 @@ function AuthForm() {
           </label>
           {!login && (
             <label>
-              Confirm password
+              <span>Confirm password</span>
               <input
                 name="confirm"
                 type={visible ? "text" : "password"}
@@ -358,7 +358,7 @@ function Profile() {
         >
           <h2>Edit your profile</h2>
           <label>
-            Display name
+            <span>Display name</span>
             <input
               name="display_name"
               defaultValue={profile.display_name}
@@ -367,7 +367,7 @@ function Profile() {
             />
           </label>
           <label>
-            Short bio
+            <span>Short bio</span>
             <textarea
               name="bio"
               defaultValue={profile.bio}
@@ -376,7 +376,7 @@ function Profile() {
             />
           </label>
           <label>
-            Favorite genres
+            <span>Favorite genres</span>
             <input
               name="genres"
               defaultValue={profile.genres}
