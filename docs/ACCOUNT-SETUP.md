@@ -21,3 +21,11 @@ This branch adds registration, login/logout, basic profile loading and shared ac
 Automated username/password validation and username-availability feedback tests run with `npm test`. Build with `npm run build`.
 
 Live acceptance testing is still required: create and confirm a disposable account; log in and reload; try a duplicate username with different capitalization and a duplicate email; test invalid input and network/server failures; verify keyboard navigation and that concurrent submissions do not create duplicate accounts. Use two test accounts to confirm private profile/library isolation. Do not mark these live checks complete based only on unit tests.
+
+## Profile customization
+
+Signed-in users can edit their display name (60 characters), bio (240 characters), and comma-separated favorite genres (120 characters), and upload a JPG, PNG or WebP avatar up to 2 MB. Profiles remain owner-only through RLS; avatar images are public. Database and bucket constraints enforce field and upload limits. Replacing a photo leaves the old file in storage for future cleanup. Test saving and reloading fields and images with a real account before deployment.
+
+## Saved library
+
+Artist profiles and song search results have Save/Unsave buttons with a saved indicator. My account includes Favorite artists and Saved songs, a saved-song search and Spotify previews. Real-account items are stored in `library_items` with owner-only RLS and a composite key preventing duplicates. The sample preview library is temporary. Test saving/unsaving, reload persistence and isolation with two real accounts before marking this feature Done.
