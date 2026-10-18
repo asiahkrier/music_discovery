@@ -422,9 +422,10 @@ button:disabled {
   background: #293923;
 }
 
-.user-avatar span {
-  color: var(--lime);
-  font-size: 76px;
+.user-avatar .default-avatar {
+  object-fit: contain;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .user-identity h1 {
