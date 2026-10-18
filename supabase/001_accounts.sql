@@ -42,8 +42,21 @@ revoke all on public.library_items from anon, authenticated;
 grant select, insert, update, delete on public.library_items to authenticated;
 create policy "Own library only" on public.library_items for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('avatars', 'avatars', true, 2097152, array['image/jpeg','image/png','image/webp']);
-create policy "Upload own avatar" on storage.objects for insert to authenticated with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
-create policy "Delete own avatar" on storage.objects for delete to authenticated using (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+-- Reuse the bucket identifier when creating the bucket and its policies.
+do $avatar_setup$
+declare
+  avatar_bucket constant text := 'avatars';
+begin
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values (avatar_bucket, avatar_bucket, true, 2097152, array['image/jpeg','image/png','image/webp']);
+  execute format(
+    'create policy "Upload own avatar" on storage.objects for insert to authenticated with check (bucket_id = %L and (storage.foldername(name))[1] = (select auth.uid())::text)',
+    avatar_bucket
+  );
+  execute format(
+    'create policy "Delete own avatar" on storage.objects for delete to authenticated using (bucket_id = %L and (storage.foldername(name))[1] = (select auth.uid())::text)',
+    avatar_bucket
+  );
+end;
+$avatar_setup$;
 commit;
