@@ -1,6 +1,7 @@
 import ArtistBiography from './ArtistBiography.jsx';
 import { SaveButton } from './AccountContext.jsx';
 import ArtistPlayer from './ArtistPlayer.jsx';
+import AllTimeTopSongs from './AllTimeTopSongs.jsx';
 import ArtistPhoto from './ArtistPhoto.jsx';
 import RelatedArtists from './RelatedArtists.jsx';
 import Discovery from './Discovery.jsx';
@@ -55,6 +56,7 @@ export default function ArtistSearch() {
       <section className="profile-banner"><div className="profile-photo"><ArtistPhoto artist={artist} className="large"/>{artist.imageSource && <a className="photo-credit" href={artist.imageSource} target="_blank" rel="noreferrer">Photo credits ↗</a>}</div><div><p className="eyebrow">ARTIST</p><h1 ref={heading} tabIndex={-1}>{artist.name}</h1><div className="tags">{artist.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div><ArtistBiography key={artist.id} artistId={artist.id}/></section>
       <SaveButton item={{ kind: 'artist', spotify_id: artist.id, name: artist.name, subtitle: artist.tags.join(' · '), image: artist.image || '' }}/>
       <ArtistPlayer key={`${artist.id}-${detail.country}`} detail={detail}/>
+      <AllTimeTopSongs key={`top-${artist.id}-${detail.country}`} artist={artist} country={detail.country}/>
 
       <RelatedArtists key={`${artist.id}-${detail.country}`} artist={artist} country={detail.country} onSelect={select}/>
 
