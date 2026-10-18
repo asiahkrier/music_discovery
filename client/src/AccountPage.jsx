@@ -280,7 +280,7 @@ function Profile() {
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="Your profile" />
             ) : (
-              <img className="default-avatar" src="/ripple-logo.png" alt="Ripple default profile picture" />
+              <img className="default-avatar" src="/ripple-logo.png" alt="Ripple default avatar" />
             )}
           </div>
           <label className="account-button upload-label">
