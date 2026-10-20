@@ -50,9 +50,13 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     cache.set(country, { until: Date.now() + 300000, promise });
     try { return await promise; } catch (e) { cache.delete(country); throw e; }
   }
+  async function songArtwork(id) {
+    const track = await api(`tracks/${id}`);
+    return { image: track.album?.images?.[1]?.url || track.album?.images?.[0]?.url || '' };
+  }
   async function songs(q, country) {
     const data = await api('search', { q, type: 'track', market: country, limit: 10 });
     return (data.tracks?.items || []).filter(Boolean).map(t => ({ id: t.id, title: t.name, artist: t.artists.map(a => a.name).join(', '), album: t.album?.name, image: t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || '', durationMs: t.duration_ms || 0, url: `https://open.spotify.com/track/${t.id}`, providerName: 'Spotify' }));
   }
-  return { configured, profile, search, discover, songs };
+  return { configured, profile, search, discover, songs, songArtwork };
 }

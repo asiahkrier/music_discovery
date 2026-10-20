@@ -1,3 +1,4 @@
+import SongArtwork from './SongArtwork.jsx';
 import React, { useState, useEffect, useRef } from "react";
 import {
   supabase,
@@ -279,7 +280,7 @@ function Profile() {
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="Your profile" />
             ) : (
-              <span>≋</span>
+              <img className="default-avatar" src="/ripple-logo.png" alt="Ripple default avatar" />
             )}
           </div>
           <label className="account-button upload-label">
@@ -404,9 +405,7 @@ function Profile() {
           {artists.map((artist, index) => (
             <article key={artist.spotify_id} className="favorite-card">
               <a
-                href={`https://open.spotify.com/artist/${artist.spotify_id}`}
-                target="_blank"
-                rel="noreferrer"
+                href={`/?artist=${encodeURIComponent(artist.spotify_id)}`}
               >
                 <div className={`favorite-art art-${index % 3}`}>
                   {artist.image ? (
@@ -442,9 +441,7 @@ function Profile() {
         )}
         {songs.map((song) => (
           <div className="saved-song" key={song.spotify_id}>
-            <div className="song-icon" aria-hidden="true">
-              ♫
-            </div>
+            <SongArtwork key={song.spotify_id} song={song} />
             <div>
               <strong>{song.name}</strong>
               <small>{song.subtitle}</small>
