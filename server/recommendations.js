@@ -67,7 +67,7 @@ async function matchArtist(candidate, spotify, country) {
 export function createRecommendations({ spotify, apiKey = '', fetchImpl = fetch }) {
   const cache = new Map();
 
-    async function artistInfo(name) {
+  async function artistInfo(name) {
     try {
       const params = new URLSearchParams({ method: 'artist.getInfo', artist: name, api_key: apiKey, format: 'json', autocorrect: '0' });
       const response = await fetchImpl(`https://ws.audioscrobbler.com/2.0/?${params}`, { signal: AbortSignal.timeout(4000) });
@@ -84,8 +84,10 @@ export function createRecommendations({ spotify, apiKey = '', fetchImpl = fetch 
       const current = await spotify.profile(id);
       const params = new URLSearchParams({ method: 'artist.getSimilar', artist: current.name, api_key: apiKey, format: 'json', autocorrect: '0', limit: '30' });
       const response = await fetchImpl(`https://ws.audioscrobbler.com/2.0/?${params}`, { signal: AbortSignal.timeout(4000) });
-      if (!response.ok) return empty();
-            const candidates = rankedArtists(await response.json(), current.name);
+      if (!response.ok) {
+        return empty();
+      }
+      const candidates = rankedArtists(await response.json(), current.name);
       const currentInfo = await artistInfo(current.name);
       // At most three candidates at once: find each on Spotify, then score it with Last.fm tags and listeners.
       const results = new Array(candidates.length);
