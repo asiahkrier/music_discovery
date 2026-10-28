@@ -708,3 +708,57 @@ button:disabled {
     inset: -10px 0;
   }
 }
+
+.account-dropdown { position: relative; }
+.account-dropdown summary { cursor: pointer; list-style: none; padding: 12px 20px; border: 1px solid var(--line, #39452f); border-radius: 30px; }
+.account-dropdown summary:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; }
+.account-dropdown nav { position: absolute; right: 0; top: calc(100% + 10px); width: 190px; padding: 8px; display: grid; gap: 4px; z-index: 20; background: #1c2418; border: 1px solid #39452f; border-radius: 16px; box-shadow: 0 12px 32px #0008; }
+.account-dropdown nav button { text-align: left; border: 0; border-radius: 10px; }
+.settings-page { max-width: 820px; margin: 30px auto 70px; }
+.settings-page h1 { font-size: clamp(36px, 6vw, 56px); margin: 12px 0; }
+.settings-page .account-panel { margin-top: 24px; }
+.settings-page fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 18px; min-width: 0; }
+.settings-page input { width: 100%; box-sizing: border-box; }
+.settings-page h2 { margin-top: 0; }
+.settings-page button { justify-self: start; }
+.settings-feedback { display: block; padding: 18px; border: 1px solid var(--lime); border-radius: 12px; margin-top: 16px; }
+.settings-danger { border-color: #81554d; }
+.settings-danger button[type=submit] { color: #ffd9d2; border-color: #a25d50; background: #462a25; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* Keep account actions readable against Ripple's dark panels. */
+.settings-page button,
+.song-result > button,
+.account-dropdown nav button {
+  appearance: none;
+  background: #20251e;
+  color: #f2f3ed;
+  border: 1px solid #414a38;
+  border-radius: 24px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.settings-page button:hover:not(:disabled),
+.song-result > button:hover:not(:disabled),
+.account-dropdown nav button:hover:not(:disabled) {
+  background: #2c3525;
+  border-color: #8ba178;
+}
+.settings-page .settings-danger button[type="submit"] {
+  background: #462a25;
+  color: #ffd9d2;
+  border-color: #a25d50;
+}
+.settings-page .settings-danger button[type="submit"]:hover:not(:disabled) {
+  background: #59362e;
+}
+
+.account-dropdown summary.account-avatar {
+  width:46px; height:46px; padding:3px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:#1c2418; border:1px solid #536342;
+}
+.account-dropdown summary.account-avatar::-webkit-details-marker { display:none; }
+.account-avatar img { display:block; width:100%; height:100%; border-radius:50%; object-fit:cover; }
+.account-dropdown[open] .account-avatar, .account-dropdown .account-avatar:hover { border-color:var(--lime); }

@@ -17,3 +17,13 @@ export async function checkUsernameAvailable(client, username) {
   if (error || typeof data !== 'boolean') throw new Error('We couldn’t check your username right now. Please try again.');
   if (!data) throw new Error('That username is already taken. Please choose another.');
 }
+
+export function signupEmailFeedback(error, data) {
+  if (['user_already_exists', 'email_exists'].includes(error?.code)) {
+    return 'That email is already in use. Choose Log in below, or use another email.';
+  }
+  if (!error && data?.user?.identities?.length === 0) {
+    return 'We couldn’t create a new account with this email. It may already be registered. Choose Log in below, or use another email.';
+  }
+  return '';
+}

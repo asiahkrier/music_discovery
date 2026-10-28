@@ -1,16 +1,18 @@
 import express from 'express';
+import { accountSettingsRouter } from './account-settings.js';
 import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
 import { createTopTracks } from './top-tracks.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
-export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '' } = {}) {
+export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {} } = {}) {
   const app = express();
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
   const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
   const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
+  app.use('/api/account', accountSettingsRouter(accountOptions));
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
     if (typeof country !== 'string' || !/^[A-Z]{2}$/.test(country)) return res.status(400).json({ error: 'Use a two-letter country code.' });
