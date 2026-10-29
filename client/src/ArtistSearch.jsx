@@ -1,3 +1,4 @@
+import SearchSuggestions from './SearchSuggestions.jsx';
 import ArtistBiography from './ArtistBiography.jsx';
 import { SaveButton } from './AccountContext.jsx';
 import ArtistPlayer from './ArtistPlayer.jsx';
@@ -50,7 +51,7 @@ export default function ArtistSearch() {
     {!detail && <><div className="intro"><div><p className="eyebrow">A NEW WAY TO WANDER</p><h1>Follow your sound<span>.</span></h1><p>Mainstream, underground, and everything in between.</p></div><span className="mode">Live artist catalog</span></div>
     <form onSubmit={search}>
       <div className="song-options"><label>Country code<input value={country} onChange={e => setCountry(e.target.value.toUpperCase())} minLength={2} maxLength={2} pattern="[A-Za-z]{2}" required aria-label="Artist catalog country"/></label></div>
-      <div className="search"><label className="sr-only" htmlFor="artist-search">Search for an artist</label><span aria-hidden="true">⌕</span><input id="artist-search" value={query} onChange={e => setQuery(e.target.value)} maxLength={200} required placeholder="Artist name or Spotify artist link…"/><button type="submit">Find artists ↗</button></div>
+      <SearchSuggestions kind="artist" query={query} setQuery={setQuery} country={country} onSelect={select} label="Search artists" placeholder="Artist name…" maxLength={200}/>
     </form>
     <p className="fine-print">Spotify artists, photos, and playback. You can also paste a Spotify artist link. Availability varies by artist and country.</p>
     </>}

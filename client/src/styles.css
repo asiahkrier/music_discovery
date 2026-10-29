@@ -34,3 +34,11 @@ output { display: block; margin-block: 1em; }
 .artist-top-tracks .discovery-controls{max-width:740px}.artist-top-tracks .discovery-controls button{margin-left:auto}
 .artist-top-tracks .discovery-controls button{margin-top:10px}
 .artist-top-tracks .section-title{max-width:740px}
+.search-suggestions { position: relative; }
+.suggestion-panel { position: absolute; z-index: 20; inset: 100% 0 auto; margin-top: 8px; padding: 12px; border: 1px solid #45523b; border-radius: 18px; background: #1c2419; box-shadow: 0 16px 40px #0008; }
+.suggestion-panel output { display: block; color: #c3cbbd; font-size: 13px; padding: 6px; }
+.suggestion-panel ul { list-style: none; padding: 0; margin: 0; }
+.suggestion-panel button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: transparent; color: #f3f5ef; border: 0; border-radius: 10px; padding: 10px; }
+.suggestion-panel button:hover, .suggestion-panel button:focus-visible, .suggestion-panel .suggestion-active { background: #33432a; outline: 2px solid #c1f77a; }
+.suggestion-panel img { width: 42px; height: 42px; object-fit: cover; border-radius: 8px; }
+.suggestion-panel small { display: block; color: #b7c2af; }

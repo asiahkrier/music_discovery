@@ -60,3 +60,11 @@ Artist profiles now display a short Last.fm biography next to the photo and name
 ## Similar artists update
 
 Profile recommendations now come from Last.fm's similar-artist results, matched to Spotify profiles. The former Spotify name-search fallback is removed. The existing `LASTFM_API_KEY` is reused. See [recommendation behavior and limitations](docs/recommendations.md).
+
+### Live signup checks and search suggestions
+
+Apply `supabase/006_email_availability.sql` in the Supabase SQL editor before deploying the live signup checks. This migration is additive and does not modify existing accounts. Render needs the existing `SUPABASE_SERVICE_ROLE_KEY` and Supabase URL configured on the server; never put the service-role key in a `VITE_` variable. The email availability function is executable only by the service role. The public endpoint returns a boolean, validates inputs, disables caching, and limits requests per IP.
+
+Signup checks username/email availability after a 500 ms typing pause and checks both again before signup. Supabase still enforces account creation and database username uniqueness. If the availability service is unavailable, signup displays an error rather than claiming the account was created.
+
+Artist/song suggestions use the existing Spotify search endpoints after two characters and a 400 ms pause. Stale requests are canceled. Arrow keys and Enter select suggestions; Escape dismisses them. Artist suggestions open Ripple profiles, and song suggestions open an inline Spotify preview. Normal search remains available when suggestions fail.

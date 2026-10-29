@@ -1,3 +1,4 @@
+import SearchSuggestions from './SearchSuggestions.jsx';
 import React, { useEffect, useRef, useState } from 'react';
 import { SpotifySaveButton } from './SpotifyConnection.jsx';
 import { SaveButton } from './AccountContext.jsx';
@@ -48,7 +49,7 @@ export default function SongSearch() {
         <label>Music service<select value={provider} onChange={e => setProvider(e.target.value)}>{providers.map(p => <option key={p.id} value={p.id} disabled={!p.enabled}>{p.name}{!p.enabled && ' — not connected'}</option>)}</select></label>
         <label>Country code<input aria-label="Country code" value={country} onChange={e => setCountry(e.target.value.toUpperCase())} maxLength={2} minLength={2} pattern="[A-Za-z]{2}" required placeholder="US"/></label>
       </div>
-      <div className="search"><label className="sr-only" htmlFor="song-query">Song title or artist</label><span aria-hidden="true">⌕</span><input id="song-query" value={query} onChange={e => setQuery(e.target.value)} maxLength={100} required placeholder="Song title or artist…"/><button type="submit">Find songs ↗</button></div>
+      <SearchSuggestions kind="song" query={query} setQuery={setQuery} country={country} onSelect={song => { request.current?.abort(); setBusy(false); setError(''); setResult({ songs: [song], country, providers: [] }); setPreviewId(song.id); }} label="Search songs" placeholder="Song name…" maxLength={100}/>
     </form>
     <p className="fine-print">Connected: {providers.filter(p => p.enabled).map(p => p.name).join(', ') || 'checking…'}. Select Preview to listen here. Playback availability depends on Spotify.</p>
     <div aria-live="polite" aria-busy={busy}>

@@ -1,3 +1,4 @@
+import { signupAvailabilityRouter } from './signup-availability.js';
 import express from 'express';
 import { spotifyAccountRouter } from './spotify-account.js';
 import { accountSettingsRouter } from './account-settings.js';
@@ -13,6 +14,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
   const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
+  app.use('/api/signup-availability', signupAvailabilityRouter(accountOptions));
   app.use('/api/account', accountSettingsRouter(accountOptions));
   app.use('/api/spotify', spotifyAccountRouter({ ...spotifyAccountOptions, fetchImpl, related }));
   const route = (path, handler) => app.get(path, async (req, res) => {
