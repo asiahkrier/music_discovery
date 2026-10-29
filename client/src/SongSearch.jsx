@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { SpotifySaveButton } from './SpotifyConnection.jsx';
 import { SaveButton } from './AccountContext.jsx';
 
 export default function SongSearch() {
@@ -62,7 +63,7 @@ export default function SongSearch() {
             {previewId === song.id ? 'Close preview' : 'Preview song'}
           </button>
           {previewId === song.id && <iframe title={`${song.title} Spotify preview`} src={`https://open.spotify.com/embed/track/${encodeURIComponent(song.id)}`} width="100%" height="152" style={{ border: 0, borderRadius: 12 }} allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"/>}
-          <SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: song.image || '' }}/>
+          <SpotifySaveButton id={song.id}/><SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: song.image || '' }}/>
         </article>)}</div>
       </>}
     </div>

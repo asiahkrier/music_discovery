@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import SpotifyConnection from './SpotifyConnection.jsx';
 import { supabase } from './account-client.js';
 import { useAccount } from './AccountContext.jsx';
 
@@ -46,6 +47,7 @@ export default function AccountSettings({ onProfile }) {
     <p className="eyebrow">YOUR ACCOUNT, YOUR CONTROL</p><h1>Settings</h1><p className="account-muted">Manage how you sign in to Ripple.</p>
     {demo && <p className="notice">Design preview. Changes are not saved.</p>}
     {error && <p role="alert">{error}</p>}{message && <output className="settings-feedback">{message}</output>}
+    <SpotifyConnection/>
     <section className="account-panel"><h2>Email address</h2><p className="account-muted">Current email: {user.email || 'listener@example.com'}</p>
       <form className="account-form" onSubmit={e => void submit(e, 'email')}><fieldset disabled={busy}>
         <label>New email<input name="email" type="email" autoComplete="email" required maxLength={254}/></label>

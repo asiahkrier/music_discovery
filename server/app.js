@@ -1,11 +1,12 @@
 import express from 'express';
+import { spotifyAccountRouter } from './spotify-account.js';
 import { accountSettingsRouter } from './account-settings.js';
 import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
 import { createTopTracks } from './top-tracks.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
-export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {} } = {}) {
+export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {}, spotifyAccountOptions = {} } = {}) {
   const app = express();
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
@@ -13,6 +14,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
   app.use('/api/account', accountSettingsRouter(accountOptions));
+  app.use('/api/spotify', spotifyAccountRouter({ ...spotifyAccountOptions, fetchImpl, related }));
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
     if (typeof country !== 'string' || !/^[A-Z]{2}$/.test(country)) return res.status(400).json({ error: 'Use a two-letter country code.' });

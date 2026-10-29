@@ -103,7 +103,7 @@ export function createRecommendations({ spotify, apiKey = '', fetchImpl = fetch 
           const discovery = discoveryScore(info.listeners, currentInfo.listeners);
           const score = rippleScore(candidate.score, overlap, discovery);
           const shared = sharedTags(currentInfo.tags, info.tags);
-          results[index] = { ...artist, score: Math.round(score * 100) / 100, recommendationReason: shared.slice(0, 2).join(', ') };
+          results[index] = { ...artist, score: Math.round(score * 100) / 100, recommendationReason: shared.slice(0, 2).join(', '), smallerAudience: info.listeners > 0 && currentInfo.listeners > 0 && info.listeners < currentInfo.listeners, audienceSource: 'Last.fm listeners, not Spotify monthly listeners' };
         }
         return worker();
       }

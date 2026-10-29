@@ -754,6 +754,36 @@ button:disabled {
   background: #59362e;
 }
 
+/* Personal mix uses the same muted green controls as account settings. */
+.mix-heading { display:flex; justify-content:space-between; gap:24px; align-items:center; margin-bottom:28px; }
+.mix-heading h1 { margin:10px 0; }
+.mix-badge { border:1px solid #566541; color:#c4ed8d; padding:16px 22px; border-radius:40px; white-space:nowrap; }
+.mix-sources { display:flex; flex-wrap:wrap; gap:24px; border:0; padding:8px 0 20px; }
+.mix-sources label, .mix-check { display:flex; align-items:center; gap:10px; }
+.mix-sources input, .mix-check input { width:18px; height:18px; accent-color:#baf477; }
+.mix-check { margin:12px 0; }
+.mix-slider { display:block; max-width:580px; margin:26px 0 18px; }
+.mix-slider strong { float:right; color:#c4ed8d; }
+.mix-slider input { display:block; width:100%; margin:20px 0 12px; accent-color:#baf477; }
+.mix-slider > span { display:flex; justify-content:space-between; color:#aeb5a5; font-size:14px; }
+.mix-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; }
+.mix-track { min-width:0; padding:22px; }
+.mix-track h3 { margin:10px 0; }
+.mix-art { height:190px; border-radius:14px; background:linear-gradient(135deg,#344a2b,#1a241b); position:relative; display:grid; place-items:center; overflow:hidden; margin-bottom:22px; }
+.mix-art > span:first-child { font-size:72px; color:#c5f58b; }
+.mix-art img { width:100%; height:100%; object-fit:cover; }
+.mix-number { position:absolute; bottom:12px; right:14px; color:#fff; background:#152010cc; border-radius:16px; padding:5px 10px; }
+.mix-track-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:20px; }
+.spotify-connection output, .ripple-mix > output { display:block; margin:16px 0; }
+@media(max-width:900px) { .mix-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .mix-heading { align-items:flex-start; } }
+@media(max-width:600px) { .mix-grid { grid-template-columns:1fr; } .mix-heading { display:block; } .mix-badge { display:inline-block; margin-top:12px; } .mix-slider strong { float:none; display:block; } }
+
+.settings-page .mix-sources { display:flex; flex-wrap:wrap; gap:18px 24px; margin:16px 0 24px; }
+.mix-sources input, .mix-check input { flex:0 0 18px; padding:0; }
+.mix-explanation { margin:20px 0; color:#aeb5a5; }
+.mix-explanation summary { cursor:pointer; font-size:14px; color:#d2ddc6; }
+@media(max-width:550px) { header { height:auto; min-height:94px; flex-wrap:wrap; gap:10px; padding-top:10px; padding-bottom:10px; } .header-links { flex-wrap:wrap; } }
+
 .account-dropdown summary.account-avatar {
   width:46px; height:46px; padding:3px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;

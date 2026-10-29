@@ -7,6 +7,7 @@ import {
   signupEmailFeedback,
 } from "./account-client.js";
 import SignupArtwork from "./SignupArtwork.jsx";
+import { SpotifySaveButton } from "./SpotifyConnection.jsx";
 import { SaveButton, useAccount } from "./AccountContext.jsx";
 
 function AuthForm() {
@@ -444,6 +445,7 @@ function Profile() {
               {playing === song.spotify_id ? "Close player" : "▷ Preview"}
             </button>
             <SaveButton item={song} />
+            <SpotifySaveButton id={song.spotify_id} />
             {playing === song.spotify_id && (
               <iframe
                 className="saved-embed"
