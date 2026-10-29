@@ -4,6 +4,7 @@ import {
   supabase,
   validateSignup,
   checkUsernameAvailable,
+  signupEmailFeedback,
 } from "./account-client.js";
 import SignupArtwork from "./SignupArtwork.jsx";
 import { SaveButton, useAccount } from "./AccountContext.jsx";
@@ -54,6 +55,8 @@ function AuthForm() {
               emailRedirectTo: `${window.location.origin}/?view=account`,
             },
           });
+      const emailFeedback = login ? '' : signupEmailFeedback(e, data);
+      if (emailFeedback) throw new Error(emailFeedback);
       if (e) {
         // A concurrent signup may have claimed the username after our first check.
         if (
@@ -249,13 +252,6 @@ function Profile() {
             ? "Loading your profile…"
             : account.error || "Your profile is not available yet."}
         </output>
-        <button
-          type="button"
-          className="account-button"
-          onClick={() => void run(account.signOut)}
-        >
-          Log out
-        </button>
         {error && <p role="alert">{error}</p>}
       </div>
     );
@@ -335,14 +331,6 @@ function Profile() {
             onClick={() => setEditing((v) => !v)}
           >
             {editing ? "Cancel editing" : "Edit profile"}
-          </button>
-          <button
-            type="button"
-            className="account-button"
-            disabled={busy}
-            onClick={() => void run(account.signOut)}
-          >
-            {demo ? "Exit preview" : "Log out"}
           </button>
         </div>
       </section>
