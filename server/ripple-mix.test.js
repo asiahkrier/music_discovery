@@ -54,3 +54,39 @@ test('build uses selected sources and exact Spotify artist identity for discover
   assert.ok(calls.every(path => path.startsWith('search?')));
   assert.equal(result.tracks[0].smallerAudience, true);
 });
+
+
+test('balanced selection keeps familiar artists and discoveries across audience sizes', () => {
+  const familiar = Array.from({ length: 10 }, (_, n) => ({ id: id(100+n), artistId: id(200+n), relevance: 0.7 }));
+  const smaller = Array.from({ length: 25 }, (_, n) => ({ id: id(300+n), artistId: id(400+n), relevance: 0.95, smallerAudience: true }));
+  const other = Array.from({ length: 10 }, (_, n) => ({ id: id(500+n), artistId: id(600+n), relevance: 0.7 }));
+  const result = rankMix([...familiar, ...smaller, ...other], { knownArtists: familiar.map(t => t.artistId), adventure: 60 });
+  assert.equal(result.length, 20);
+  assert.equal(result.filter(t => !t.newToYou).length, 8);
+  assert.equal(result.filter(t => t.newToYou && t.smallerAudience).length, 6);
+  assert.equal(result.filter(t => t.newToYou && !t.smallerAudience).length, 6);
+});
+
+test('sparse pools fill available slots without inventing familiar artists or repeating tracks', () => {
+  const input = Array.from({ length: 4 }, (_, n) => ({ id: id(n+1), artistId: id(n+20), relevance: 0.8, smallerAudience: true }));
+  const result = rankMix(input, { dismissed: [id(1)], limit: 20 });
+  assert.equal(result.length, 3);
+  assert.ok(result.every(t => t.newToYou));
+});
+
+test('artist-only Ripple saves supply familiar songs with an empty Spotify library', async () => {
+  const track = (n, artist) => ({ id: id(n), type: 'track', name: 'Song', artists: [{ id: id(artist), name: 'Artist' }] });
+  const result = await buildMix({
+    api: async path => {
+      if (!path.startsWith('search?')) return { items: [] };
+      const q = new URLSearchParams(path.split('?')[1]).get('q');
+      if (q.includes('Seed')) return { tracks: { items: [track(101, 1), track(102, 1), track(103, 99)] } };
+      return { tracks: { items: [track(201, 2)] } };
+    },
+    related: async () => ({ artists: [{ id: id(2), name: 'Discovery', score: 0.8, smallerAudience: true }] }),
+    library: [{ kind: 'artist', spotify_id: id(1), name: 'Seed' }], preferences: mixPreferences(), seed: 'week',
+  });
+  assert.equal(result.tracks.filter(t => !t.newToYou).length, 2);
+  assert.equal(result.tracks.filter(t => t.newToYou).length, 1);
+  assert.ok(!result.tracks.some(t => t.id === id(103)));
+});

@@ -19,7 +19,7 @@ Local implementation; not deployed. Spotify account linking is separate from Rip
 - Opt-in mix generation after connecting. Source checkboxes, up to three chosen playlists, and a Familiar–Adventurous slider.
 - Bounded samples: newest 100 Ripple saved items; up to 20 Ripple artist seeds and 10 saved tracks; Spotify 50 saved songs, 20 top artists/tracks, 50 recent plays, and 50 tracks per selected playlist. This is **not** a complete Spotify library/history import. Playlist picker lists eligible entries from the first 50 playlists.
 - Up to eight seed artists, with reserved room for Ripple saves. Last.fm similarity and tag matches produce candidates, verified against Spotify artist IDs. Requests are bounded and failures are visible; no same-name guessing fallback.
-- Rules-based ranking uses 65% relevance plus up to 20% novelty and 15% smaller-audience boost, with a small deterministic variation for ties. At most two tracks per artist. Duplicates, dismissed songs, unavailable tracks, local files, and episodes are excluded. Unknown listener counts never qualify as a smaller audience.
+- Rules-based ranking uses 65% relevance plus up to 20% novelty and 5% smaller-audience boost, with a small deterministic variation for ties. At most two tracks per artist. Duplicates, dismissed songs, unavailable tracks, local files, and episodes are excluded. Unknown listener counts never qualify as a smaller audience.
 - Last.fm listener counts compare audience size; they are not Spotify monthly listeners. The UI discloses the source and links discovery sources. No Spotify content is used for ML training.
 - Mix snapshot stays across visits, rebuilding on the next visit in a new UTC Monday-based week. Manual refresh includes updated saves/preferences, limited to once a minute. Source changes take effect when rebuilding.
 - Save to Ripple and Save to Spotify are separate. Spotify library saves use `PUT /me/library?uris=...`. Export explicitly creates a private playlist, then writes its items. Repeated export of the same snapshot reuses that playlist. Refresh creates a new snapshot; export then creates another playlist.
@@ -41,3 +41,11 @@ The first release assumes one Node server instance: user action locks and rebuil
 - https://developer.spotify.com/documentation/web-api/reference/save-library-items
 - https://developer.spotify.com/documentation/web-api/reference/create-playlist
 - https://developer.spotify.com/documentation/web-api/concepts/quota-modes
+
+## Balanced mix update
+
+Saved artist seeds now supply up to two playable songs each (up to eight seed artists), even with no Spotify listening data. Ripple saves remain the source of taste; Apple Music history is not imported. Related candidates no longer get an extra audience-size bonus before track lookup.
+
+Selection reserves 60%–30% of slots for familiar artists as adventure increases from 0 to 100, and 20%–40% for smaller-audience discoveries, with the remainder for other related discoveries. At adventure 60 and 20 tracks, targets are 8 familiar, 6 other discoveries, and 6 smaller-audience discoveries. These are targets, not guarantees: available candidates, dismissals and the two-track artist cap can leave gaps. Fill unused slots with other eligible tracks, favoring non-smaller candidates before the remaining pool. Unknown audience size is not labeled mainstream.
+
+Existing weekly snapshots stay unchanged until the user selects Refresh my mix.
