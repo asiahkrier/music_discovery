@@ -12,6 +12,10 @@ const sampleMix = {
     { id: 'preview-three', name: 'A familiar sound', artist: 'An artist from your Ripple library', reason: 'From your saved artists', newToYou: false },
   ],
 };
+function mixLabel(track) {
+  if (!track.newToYou) return 'FROM YOUR ROTATION';
+  return track.smallerAudience ? 'SMALLER-AUDIENCE DISCOVERY' : 'A RELATED DISCOVERY';
+}
 export default function RippleMix(props) {
   const { user } = useAccount();
   return <MixContent key={user?.id || 'guest'} {...props}/>;
@@ -71,12 +75,12 @@ function MixContent({ onProfile }) {
     {!status && error && <button type="button" onClick={() => window.location.reload()}>Try again</button>}
     {status?.connected === false && <SpotifyConnection/>}
     {status?.connected && <>
-      <section className="account-panel mix-controls"><h2>Shape your mix</h2><p>Blend your Ripple saves with these Spotify sources:</p>
+      <section className="account-panel mix-controls"><h2>Shape your mix</h2><p>Your Ripple saves always guide your mix. These Spotify sources are optional—even an empty Spotify library works:</p>
         <fieldset disabled={busy} className="mix-sources"><legend className="sr-only">Sources for recommendations</legend>{[['saved', 'Saved songs'], ['top', 'Top artists & songs'], ['recent', 'Recent listening']].map(([key, label]) => <label key={key}><input type="checkbox" checked={preferences[key]} onChange={e => setPreferences(p => ({ ...p, [key]: e.target.checked }))}/>{label}</label>)}</fieldset>
         <button type="button" disabled={busy} onClick={() => void run(loadPlaylists)}>Choose Spotify playlists</button>
         {playlists.length > 0 && <fieldset disabled={busy}><legend>Use up to three playlists</legend>{playlists.map(p => <label className="mix-check" key={p.id}><input type="checkbox" checked={preferences.playlists.includes(p.id)} disabled={!preferences.playlists.includes(p.id) && preferences.playlists.length >= 3} onChange={e => setPreferences(current => ({ ...current, playlists: e.target.checked ? [...current.playlists, p.id] : current.playlists.filter(id => id !== p.id) }))}/>{p.name}</label>)}</fieldset>}
         <label className="mix-slider">Discovery level <strong>{preferences.adventure}% adventurous</strong><input type="range" min="0" max="100" step="10" value={preferences.adventure} disabled={busy} onChange={e => setPreferences(p => ({ ...p, adventure: Number(e.target.value) }))}/><span>Familiar <span>Adventurous</span></span></label>
-        <details className="mix-explanation"><summary>How your mix works</summary><p className="fine-print">More adventurous gives extra weight to new-to-you artists and smaller audiences where available. Audience comparisons use Last.fm listener data, not Spotify monthly listeners. Artist names are sent to Last.fm to find related music.</p>
+        <details className="mix-explanation"><summary>How your mix works</summary><p className="fine-print">Your mix balances artists you saved or listen to with related discoveries of different audience sizes. More adventurous makes room for more discoveries; it does not mean smaller artists only. The balance depends on available matches. Audience comparisons use Last.fm listener data, not Spotify monthly listeners. Artist names are sent to Last.fm to find related music.</p>
         <p className="fine-print">This first version samples up to 50 saved songs, 50 recent plays, 20 top artists and songs, and 50 songs per selected playlist. Your mix stays here between visits; refresh to include new saves.</p></details>
         <div className="settings-actions"><button type="button" disabled={busy} onClick={() => void run(() => generate(Boolean(mix)))}>{busy ? 'Working…' : mix ? 'Refresh my mix' : 'Build my mix'}</button>{Boolean(mix?.tracks.length) && <button type="button" disabled={busy} onClick={() => void run(exportMix)}>Create private Spotify playlist</button>}</div>
         {exported && <p><a href={exported.url} target="_blank" rel="noreferrer">Open your Spotify playlist ↗</a></p>}
@@ -85,7 +89,7 @@ function MixContent({ onProfile }) {
         {!mix.tracks.length && <p>Save some artists or songs, or enable another source, then build your mix again.</p>}
         <div className="mix-grid">{mix.tracks.map((track, index) => <article className="account-panel mix-track" key={track.id}>
           <div className="mix-art">{track.image ? <img src={track.image} alt="" loading="lazy"/> : <span aria-hidden="true">♫</span>}<span className="mix-number">{String(index + 1).padStart(2, '0')}</span></div>
-          <p className="eyebrow">{track.smallerAudience ? 'SMALLER AUDIENCE · NEW SOUND' : track.newToYou ? 'OUTSIDE YOUR ROTATION' : 'A FAMILIAR FAVORITE'}</p><h3>{track.name}</h3><p>{track.artist}</p><p className="fine-print">{track.reason}</p>
+          <p className="eyebrow">{mixLabel(track)}</p><h3>{track.name}</h3><p>{track.artist}</p><p className="fine-print">{track.reason}</p>
           {track.sourceUrl && <a className="fine-print" href={track.sourceUrl} target="_blank" rel="noreferrer">Related music source ↗</a>}
           <div className="mix-track-actions"><button type="button" disabled={demo} onClick={() => setPlaying(playing === track.id ? '' : track.id)}>{playing === track.id ? 'Close preview' : 'Preview song'}</button>
             {!demo && <><SaveButton item={{ kind: 'song', spotify_id: track.id, name: track.name, subtitle: track.artist, image: track.image || '' }}/><SpotifySaveButton id={track.id}/></>}
