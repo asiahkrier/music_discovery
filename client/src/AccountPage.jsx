@@ -1,3 +1,4 @@
+import useSignupAvailability from './useSignupAvailability.js';
 import SongArtwork from './SongArtwork.jsx';
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -5,6 +6,8 @@ import {
   validateSignup,
   checkUsernameAvailable,
   signupEmailFeedback,
+  checkSignupAvailability,
+  takenMessage,
 } from "./account-client.js";
 import SignupArtwork from "./SignupArtwork.jsx";
 import { SpotifySaveButton } from "./SpotifyConnection.jsx";
@@ -17,6 +20,10 @@ function AuthForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const usernameCheck = useSignupAvailability('username', username, !login && Boolean(supabase));
+  const emailCheck = useSignupAvailability('email', email, !login && Boolean(supabase));
   const submitting = useRef(false);
   async function submit(event) {
     event.preventDefault();
@@ -41,7 +48,9 @@ function AuthForm() {
     setBusy(true);
     try {
       if (!login) {
-        await checkUsernameAvailable(supabase, values.username);
+        const availability = await Promise.all(['username', 'email'].map(field => checkSignupAvailability(field, values[field])));
+        if (!availability[0]) throw new Error(takenMessage('username'));
+        if (!availability[1]) throw new Error(takenMessage('email'));
       }
       const credentials = {
         email: values.email.trim(),
@@ -77,6 +86,7 @@ function AuthForm() {
         );
       }
       event.target.reset();
+      setUsername(''); setEmail('');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -118,6 +128,10 @@ function AuthForm() {
               <span>Username</span>
               <input
                 name="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                aria-describedby="signup-username-feedback"
+                aria-invalid={usernameCheck.taken}
                 required
                 minLength={3}
                 maxLength={24}
@@ -125,18 +139,24 @@ function AuthForm() {
                 autoComplete="username"
                 placeholder="Choose your unique username"
               />
-              <small>3–24 letters, numbers, or underscores.</small>
+              <output id="signup-username-feedback" aria-live="polite">{usernameCheck.message || "3–24 letters, numbers, or underscores."}</output>
             </label>
           )}
           <label>
             <span>Email</span>
             <input
               name="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              maxLength={254}
+              aria-describedby={login ? undefined : 'signup-email-feedback'}
+              aria-invalid={!login && emailCheck.taken}
               type="email"
               required
               autoComplete="email"
               placeholder="you@example.com"
             />
+            {!login && <output id="signup-email-feedback" aria-live="polite">{emailCheck.message}</output>}
           </label>
           <label>
             <span>Password</span>
@@ -177,7 +197,7 @@ function AuthForm() {
             </p>
           )}
           {message && <output>{message}</output>}
-          <button type="submit" className="account-primary" disabled={busy}>
+          <button type="submit" className="account-primary" disabled={busy || (!login && (usernameCheck.taken || emailCheck.taken))}>
             {submitLabel}
           </button>
         </form>
@@ -185,6 +205,7 @@ function AuthForm() {
           {login ? "New to Ripple?" : "Already have an account?"}{" "}
           <button
             type="button"
+            disabled={busy}
             onClick={() => {
               setLogin((v) => !v);
               setError("");

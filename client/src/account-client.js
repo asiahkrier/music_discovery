@@ -27,3 +27,16 @@ export function signupEmailFeedback(error, data) {
   }
   return '';
 }
+
+export async function checkSignupAvailability(field, value, signal, fetchImpl = fetch) {
+  const response = await fetchImpl('/api/signup-availability', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field, value }), signal,
+  });
+  const result = await response.json();
+  if (!response.ok || typeof result.available !== 'boolean') throw new Error(result.error || 'Could not check availability. Please try again.');
+  return result.available;
+}
+export function takenMessage(field) {
+  return field === 'username' ? 'That username is already taken. Please choose another.' : 'That email is already in use. Log in instead, or use another email.';
+}

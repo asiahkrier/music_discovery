@@ -57,5 +57,5 @@ export function SpotifySaveButton({ id }) {
     } catch (e) { setError(e.message); }
     finally { guard.current = false; setBusy(false); }
   }
-  return <div><button type="button" className="account-button" disabled={busy || saved} onClick={() => void save()}>{busy ? 'Saving…' : saved ? 'Saved to Spotify' : 'Save to Spotify'}</button>{error && <p role="alert">{error}</p>}</div>;
+  return <div className="spotify-save-action"><button type="button" className="account-button" disabled={busy || saved} onClick={() => void save()}>{busy ? 'Saving…' : saved ? 'Saved to Spotify' : 'Save to Spotify'}</button>{error && <p role="alert">{error}</p>}</div>;
 }
