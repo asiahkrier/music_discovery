@@ -58,5 +58,10 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     const data = await api('search', { q, type: 'track', market: country, limit: 10 });
     return (data.tracks?.items || []).filter(Boolean).map(t => ({ id: t.id, title: t.name, artist: t.artists.map(a => a.name).join(', '), album: t.album?.name, image: t.album?.images?.[1]?.url || t.album?.images?.[0]?.url || '', durationMs: t.duration_ms || 0, url: `https://open.spotify.com/track/${t.id}`, providerName: 'Spotify' }));
   }
-  return { configured, profile, search, discover, songs, songArtwork };
+  async function catalog(path) {
+    const [endpoint, query = ''] = path.split('?');
+    if (endpoint !== 'search' && !/^tracks\/[A-Za-z0-9]{22}$/.test(endpoint)) throw fail('Unsupported catalog request.', 400);
+    return api(endpoint, Object.fromEntries(new URLSearchParams(query)));
+  }
+  return { configured, profile, search, discover, songs, songArtwork, catalog };
 }

@@ -1,3 +1,4 @@
+import { libraryMixRouter } from './library-mix.js';
 import { signupAvailabilityRouter } from './signup-availability.js';
 import express from 'express';
 import { spotifyAccountRouter } from './spotify-account.js';
@@ -16,6 +17,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   app.disable('x-powered-by');
   app.use('/api/signup-availability', signupAvailabilityRouter(accountOptions));
   app.use('/api/account', accountSettingsRouter(accountOptions));
+  app.use('/api/mix', libraryMixRouter({ ...accountOptions, api: spotify.catalog, related }));
   app.use('/api/spotify', spotifyAccountRouter({ ...spotifyAccountOptions, fetchImpl, related }));
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
