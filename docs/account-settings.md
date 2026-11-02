@@ -14,7 +14,7 @@ DELETE /api/account verifies the bearer token with Supabase, verifies the curren
 
 ## Signup feedback
 
-Username availability is checked using ripple_username_available, with case-insensitive database uniqueness. Explicit duplicate-email errors show an email-in-use message. An obfuscated empty-identities response uses conditional wording because Supabase may hide registration status. No public email lookup endpoint is introduced.
+Username and email availability are checked after a 500 ms typing pause and again before signup through `POST /api/signup-availability`. The server calls the corresponding Supabase function using its service-role key and returns only `{ available }`. Input validation, no-store responses, and per-IP request limits apply. Apply migration 006 for email checks. Database username uniqueness and Supabase Auth still enforce account creation, including races after availability checks.
 
 ## Verification
 

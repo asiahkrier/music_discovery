@@ -1,6 +1,6 @@
 # HTTP API
 
-All routes return JSON. `country` defaults to `US` and must be two uppercase letters. Spotify artist IDs must be 22 alphanumeric characters. Queries must be nonempty strings of at most 200 characters. Secrets and access tokens are never part of a response.
+Catalog routes return JSON. `country` defaults to `US` and must be two uppercase letters. Spotify artist IDs must be 22 alphanumeric characters. Queries must be nonempty strings of at most 200 characters. Secrets and access tokens are never part of a response.
 
 | GET endpoint | Parameters | Successful response |
 |---|---|---|
@@ -13,7 +13,7 @@ All routes return JSON. `country` defaults to `US` and must be two uppercase let
 
 `Artist` contains `id`, `spotifyId`, `name`, `tags` (normalized strings), `rawGenres`, `image`, `imageSource`, `url`, `spotifyEmbed`, and `source`. Images may be empty; tags may be an empty array. A public oEmbed profile has no genres. There is no biography field.
 
-`Song` contains `id`, `title`, `artist` (joined names), optional `album`, `url`, and `providerName`. Song search results link to Spotify; the artist profile provides embedded playback.
+`Song` contains `id`, `title`, `artist` (joined names), optional `album`, `url`, `providerName`, `image` and `durationMs`. Song results and saved songs provide inline Spotify previews.
 
 Errors use `{ error: "User-facing message" }`:
 
@@ -25,7 +25,31 @@ Errors use `{ error: "User-facing message" }`:
 
 There is no automatic fallback to another provider. With credentials configured but rejected, artist requests also report errors rather than silently changing data sources. Expired tokens refresh on subsequent requests according to their cached expiry; there is no automatic 401 retry.
 
-## Artist suggestions when genres are unavailable
 
-If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.
-`GET /api/artist-biography?id=<Spotify ID>` returns `{text, sourceUrl}` from Last.fm. Both values are empty strings when no biography is available. Loads independently from the Spotify profile/player. See [biographies](biographies.md).
+## Profile data
+
+- `GET /api/artist-biography?id=ID`: `{ text, sourceUrl }` from Last.fm, empty when unavailable.
+- `GET /api/top-tracks?id=ID&country=US`: Last.fm-ranked songs matched to Spotify tracks for previews.
+- `GET /api/song-artwork?id=ID`: `{ image }` from Spotify album artwork.
+
+Related artists use Last.fm similarity and tags matched to Spotify identities, with no name-search fallback. See [recommendations](recommendations.md).
+
+## Accounts and mixes
+
+Private server routes require a Supabase bearer token; browser profile/library access uses Supabase row-level security. See [account setup](ACCOUNT-SETUP.md) and [account settings](account-settings.md).
+
+| Method and endpoint | Behavior |
+|---|---|
+| `POST /api/signup-availability` | Public, rate-limited check. Accepts `{ field, value }` for username/email; returns `{ available }`. |
+| `DELETE /api/account` | Verifies current password and DELETE confirmation before deletion. |
+| `GET /api/mix/status` | Current Ripple mix and preferences. |
+| `PUT /api/mix/preferences` | Updates adventure level while preserving dismissals. |
+| `POST /api/mix/mix` | Builds/reuses the weekly mix; `{ refresh: true }` requests rebuilding. |
+| `POST /api/mix/dismiss` | Dismisses a song by ID. |
+| `GET /api/spotify/status` | Connection status and display name. |
+| `POST /api/spotify/connect` | Starts optional Spotify authorization. |
+| `GET /api/spotify/callback` | Browser-bound OAuth callback; redirects to Settings. |
+| `DELETE /api/spotify/connection` | Disconnects the current user's Spotify account. |
+| `PUT /api/spotify/saved-song` | Saves a song ID to the connected Spotify library. |
+
+The old Spotify-specific mix, playlist picker and export endpoints are removed. Ripple Mix uses `/api/mix` and Ripple library saves only. See [Spotify linking](spotify-personalization.md).

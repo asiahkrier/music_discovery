@@ -5,7 +5,7 @@ import { spotifyAccountRouter } from './spotify-account.js';
 import { tokenVault } from './spotify-vault.js';
 import { fakeDatabase } from './fake-supabase.js';
 const key = Buffer.alloc(32, 7).toString('base64');
-const scopes = 'user-library-read user-library-modify user-top-read user-read-recently-played playlist-read-private playlist-read-collaborative playlist-modify-private';
+const scopes = 'user-library-modify';
 function database() {
   return fakeDatabase(['spotify_connections', 'spotify_oauth_states', 'library_items']);
 }
@@ -19,7 +19,7 @@ async function fixture(t, upstream) {
     return new Response(null, { status: 200 });
   };
   const app = express();
-  app.use('/api/spotify', spotifyAccountRouter({ url: 'https://example.supabase.co', secret: 'server', clientId: 'client', clientSecret: 'secret', encryptionKey: key, redirectUri: 'http://127.0.0.1:3006/api/spotify/callback', clientFactory: () => db, fetchImpl, related: async () => ({ artists: [] }) }));
+  app.use('/api/spotify', spotifyAccountRouter({ url: 'https://example.supabase.co', secret: 'server', clientId: 'client', clientSecret: 'secret', encryptionKey: key, redirectUri: 'http://127.0.0.1:3006/api/spotify/callback', clientFactory: () => db, fetchImpl }));
   const server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
@@ -42,6 +42,7 @@ test('OAuth is browser-bound, single-use, and stores encrypted credentials only'
   const cookie = start.headers.get('set-cookie').split(';')[0];
   const authorize = new URL((await start.json()).url);
   assert.equal(authorize.searchParams.get('code_challenge_method'), 'S256');
+  assert.equal(authorize.searchParams.get('scope'), 'user-library-modify');
   const state = authorize.searchParams.get('state');
   const wrong = await request(`callback?state=${state}&code=code`, { user: '', cookie: 'ripple_spotify_oauth=wrong' });
   assert.ok(wrong.headers.get('location').endsWith('spotify=failed'));
@@ -90,33 +91,6 @@ test('declined or expired authorization never creates a connection', async t => 
   assert.ok(response.headers.get('location').endsWith('spotify=declined'));
   assert.equal(db.tables.spotify_connections.length, 0);
 });
-test('private export retries reuse the created playlist and replace exact mix items', async t => {
-  let created = 0, writes = 0;
-  const { request, connectRow, db } = await fixture(t, async (url, options) => {
-    if (url.endsWith('/me/playlists')) {
-      assert.equal(JSON.parse(options.body).public, false); created++;
-      return Response.json({ id: 'p'.repeat(22) });
-    }
-    if (url.includes('/playlists/')) {
-      assert.equal(options.method, 'PUT');
-      assert.deepEqual(JSON.parse(options.body).uris, ['spotify:track:' + 't'.repeat(22)]);
-      writes++; return writes === 1 ? new Response('', { status: 503 }) : Response.json({ snapshot_id: 'snapshot' });
-    }
-    throw new Error('Unexpected export request');
-  });
-  connectRow(); db.tables.spotify_connections[0].mix = { tracks: [{ id: 't'.repeat(22) }] };
-  assert.equal((await request('export', { method: 'POST', body: {} })).status, 502);
-  const response = await request('export', { method: 'POST', body: {} });
-  assert.equal(response.status, 200); assert.equal(created, 1); assert.equal(writes, 2);
-});
-test('weekly mix reuses stored snapshot and never reads another user library', async t => {
-  const { request, connectRow, db, calls } = await fixture(t); connectRow();
-  const mix = { week: Math.floor((Date.now() - Date.UTC(2026, 0, 5)) / 604800000), tracks: [{ id: 'x'.repeat(22) }] };
-  db.tables.spotify_connections[0].mix = mix;
-  const response = await request('mix', { method: 'POST', body: { user_id: 'bob' } });
-  assert.deepEqual((await response.json()).mix, mix); assert.equal(calls.length, 0);
-  assert.equal((await request('mix', { method: 'POST', body: {}, user: 'bob' })).status, 409);
-});
 test('expired state is rejected before token exchange', async t => {
   const { request, db, calls } = await fixture(t);
   const start = await request('connect', { method: 'POST', body: {} });
@@ -124,4 +98,12 @@ test('expired state is rejected before token exchange', async t => {
   db.tables.spotify_oauth_states[0].expires_at = '2020-01-01T00:00:00Z';
   const response = await request(`callback?state=${state}&code=test`, { cookie: start.headers.get('set-cookie').split(';')[0], user: '' });
   assert.ok(response.headers.get('location').endsWith('spotify=failed')); assert.equal(calls.length, 0);
+});
+
+test('retired Spotify mix endpoints do not make upstream calls', async t => {
+  const { request, calls, connectRow } = await fixture(t); connectRow();
+  const endpoints = [['playlists', 'GET'], ['preferences', 'PUT'], ['dismiss', 'POST'], ['mix', 'POST'], ['export', 'POST']];
+  const responses = await Promise.all(endpoints.map(([path, method]) => request(path, { method })));
+  assert.ok(responses.every(response => response.status === 404));
+  assert.equal(calls.length, 0);
 });

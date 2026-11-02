@@ -8,7 +8,9 @@ Ripple is a student music-discovery application built with React, Vite, Node.js,
 - Paste a full Spotify artist URL to open its profile. Without credentials, this uses Spotify's public oEmbed metadata.
 - View one consistent artist profile with available artwork, simple genre labels, and Spotify's embedded artist player.
 - Shuffle six discovery cards every ten seconds, with pause and manual-shuffle controls.
-- Suggest artists using Ripple's own shared-genre scoring when Spotify supplies genre data.
+- Suggest related artists using Last.fm similarity and tags, matched to Spotify identities.
+- Create an account, customize a profile, and save artists and songs.
+- Build a personal Ripple Mix from those Ripple saves.
 
 Spotify does not supply biographies through this integration. A profile may have no genre data or similar artists. Discovery is a sample of genre search results, not every artist, a popularity ranking, or a guarantee of underground recommendations. Spotify controls playback, previews, and regional availability.
 
@@ -50,9 +52,6 @@ npm run build
 
 Submit changes through pull requests to `main`. Do not commit `.env`, `node_modules`, or `client/dist`. The existing Trivy workflow scans dependency files on pull requests and uploads reports. A successful Trivy job does not guarantee zero findings: the workflow reports vulnerabilities without failing the job for their count.
 
-## Artist suggestions when genres are unavailable
-
-If Spotify omits genres or genre matching produces no candidates, Ripple searches the current artist name, verifies that the exact Spotify ID appears, then displays up to six other unique artists returned by that search. The section is labeled “Other artists to explore” and explains the search-based source. This is not Spotify’s Fans also like feed and may be empty if the identity cannot be verified or no other matches exist. No additional provider is used. Homepage cards no longer show the generic “Discover on Spotify” badge; photo attribution links remain.
 ## Artist About section
 
 Artist profiles now display a short Last.fm biography next to the photo and name, while Spotify continues to supply search, photos and playback. Set `LASTFM_API_KEY` on the server (Render Environment or local `.env`). A shared secret is not required. See [biography setup and limitations](docs/biographies.md).
@@ -75,4 +74,4 @@ Apply `supabase/007_ripple_mixes.sql` before deploying this version. It creates 
 
 `/api/mix` requires a verified Ripple session, not a Spotify connection. It reads only that user's Ripple library and stores preferences, dismissals, and the weekly mix in `ripple_mixes`. Supabase URL/service-role configuration and the app's existing Spotify client credentials and Last.fm key are still needed; Spotify redirect URI and token-encryption configuration are not needed for this mix. Catalog requests use app credentials and never access Spotify personal-library, top-listening, recent-listening, or playlist endpoints.
 
-The mix screen retains discovery controls, previews, saving to Ripple, and dismissals. Spotify source selection, connection prompts, Spotify export, and Spotify-save controls have been removed from the mix screen. Separate Spotify testing features remain unchanged. Tests verify account isolation, no connection requirement, persistence, empty-library handling, and no personal Spotify requests.
+The mix screen retains discovery controls, previews, saving to Ripple, and dismissals. Spotify source selection, connection prompts, Spotify export, and Spotify-save controls have been removed from the mix screen. Optional Spotify connection and direct song saving remain available; obsolete Spotify mix, playlist selection, and export routes have been removed. Tests verify account isolation, no connection requirement, persistence, empty-library handling, and no personal Spotify requests.

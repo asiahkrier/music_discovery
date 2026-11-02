@@ -10,8 +10,6 @@ export function mixPreferences(value = {}) {
   const adventure = Number(value.adventure ?? 60);
   return {
     adventure: Number.isFinite(adventure) ? Math.min(100, Math.max(0, adventure)) : 60,
-    saved: value.saved !== false, top: value.top !== false, recent: value.recent !== false,
-    playlists: Array.isArray(value.playlists) ? [...new Set(value.playlists.filter(id => /^[A-Za-z0-9]{22}$/.test(id)))].slice(0, 3) : [],
     dismissed: Array.isArray(value.dismissed) ? [...new Set(value.dismissed.filter(id => /^[A-Za-z0-9]{22}$/.test(id)))].slice(-200) : [],
   };
 }
@@ -87,7 +85,7 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   async function source(path, label, consume) {
     try { consume(await api(path)); } catch (error) {
       if (error.status === 401 || error.status === 429) throw error;
-      warnings.push(`${label} could not be included. Other selected sources were used.`);
+      warnings.push(`${label} could not be included. Other Ripple favorites were used.`);
     }
   }
   async function songsForArtist(artist, reason, relevance, output, extra = {}) {
@@ -100,15 +98,15 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   }
   const rippleArtists = library.filter(i => i.kind === 'artist');
   rippleArtists.slice(0, 20).forEach(i => addArtist({ id: i.spotify_id, name: i.name }, 5, `Saved on Ripple: ${i.name}`));
-  // Sequential bounded groups avoid a burst of catalog requests.
+  // Resolve at most ten saved songs before choosing artist seeds.
   await Promise.all(library.filter(i => i.kind === 'song').slice(0, 10).map(i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple'))));
   const allSeeds = [...seeds.values()].sort((a, b) => b.weight - a.weight);
   // Choose the strongest preferences from Ripple saves only.
-  const chosen = [...new Map([...allSeeds.filter(a => a.source.startsWith('Saved on Ripple')).slice(0, 3), ...allSeeds.slice(0, 8)].map(a => [a.id, a])).values()].slice(0, 8);
+  const chosen = allSeeds.slice(0, 8);
   // Artist-only Ripple libraries also need songs from the artists the user saved.
   const knownSongs = [];
   await inPairs(chosen, artist => songsForArtist(
-    artist, 'From an artist you saved or listen to', 0.8, knownSongs,
+    artist, 'From an artist you saved on Ripple', 0.8, knownSongs,
   ));
   const candidates = [];
   const results = await inPairs(chosen, async artist => ({ artist, response: await related(artist.id, 'US') }));
