@@ -12,7 +12,7 @@ export function fakeDatabase(tableNames) {
       if (mode === 'update') rows.forEach(r => Object.assign(r, structuredClone(value)));
       return { data: structuredClone(single ? rows[0] || null : rows), error: null };
     });
-    Object.assign(query, {
+    return Object.assign(query, {
       select() { return query; }, maybeSingle() { single = true; return query; },
       eq(k, v) { filters.push(r => r[k] === v); return query; },
       gt(k, v) { filters.push(r => r[k] > v); return query; },
@@ -20,6 +20,5 @@ export function fakeDatabase(tableNames) {
       order() { return query; }, limit() { return query; },
       delete() { mode = 'delete'; return query; }, update(v) { mode = 'update'; value = v; return query; }, upsert(v) { mode = 'upsert'; value = v; return query; },
     });
-    return query;
   } };
 }
