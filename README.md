@@ -68,3 +68,11 @@ Apply `supabase/006_email_availability.sql` in the Supabase SQL editor before de
 Signup checks username/email availability after a 500 ms typing pause and checks both again before signup. Supabase still enforces account creation and database username uniqueness. If the availability service is unavailable, signup displays an error rather than claiming the account was created.
 
 Artist/song suggestions use the existing Spotify search endpoints after two characters and a 400 ms pause. Stale requests are canceled. Arrow keys and Enter select suggestions; Escape dismisses them. Artist suggestions open Ripple profiles, and song suggestions open an inline Spotify preview. Normal search remains available when suggestions fail.
+
+### Ripple-library-only Mix
+
+Apply `supabase/007_ripple_mixes.sql` before deploying this version. It creates independent, server-only mix storage with row-level security and account-deletion cascading. Existing Spotify connections and old mixes are preserved, but are not imported into the new mix: users build a fresh mix from Ripple saves.
+
+`/api/mix` requires a verified Ripple session, not a Spotify connection. It reads only that user's Ripple library and stores preferences, dismissals, and the weekly mix in `ripple_mixes`. Supabase URL/service-role configuration and the app's existing Spotify client credentials and Last.fm key are still needed; Spotify redirect URI and token-encryption configuration are not needed for this mix. Catalog requests use app credentials and never access Spotify personal-library, top-listening, recent-listening, or playlist endpoints.
+
+The mix screen retains discovery controls, previews, saving to Ripple, and dismissals. Spotify source selection, connection prompts, Spotify export, and Spotify-save controls have been removed from the mix screen. Separate Spotify testing features remain unchanged. Tests verify account isolation, no connection requirement, persistence, empty-library handling, and no personal Spotify requests.

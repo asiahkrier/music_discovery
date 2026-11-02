@@ -95,17 +95,8 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   rippleArtists.slice(0, 20).forEach(i => addArtist({ id: i.spotify_id, name: i.name }, 5, `Saved on Ripple: ${i.name}`));
   // Sequential bounded groups avoid a burst of catalog requests.
   await Promise.all(library.filter(i => i.kind === 'song').slice(0, 10).map(i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple'))));
-  const reads = [];
-  if (preferences.saved) reads.push(source('me/tracks?limit=50', 'Spotify saved songs', d => (d.items || []).forEach(i => addTrack(i.track, 2, 'From your Spotify saved songs'))));
-  if (preferences.top) {
-    reads.push(source('me/top/artists?limit=20&time_range=medium_term', 'Spotify top artists', d => (d.items || []).forEach(a => addArtist(a, 3, `You listen to ${a.name}`))));
-    reads.push(source('me/top/tracks?limit=20&time_range=medium_term', 'Spotify top songs', d => (d.items || []).forEach(t => addTrack(t, 2, 'One of your Spotify favorites'))));
-  }
-  if (preferences.recent) reads.push(source('me/player/recently-played?limit=50', 'Recent listening', d => (d.items || []).forEach(i => addTrack(i.track, 1, 'From your recent listening'))));
-  await Promise.all(reads);
-  await Promise.all(preferences.playlists.map(id => source(`playlists/${id}/items?limit=50`, 'A selected playlist', d => (d.items || []).forEach(i => addTrack(i.item || i.track, 2, 'From your selected playlist')))));
   const allSeeds = [...seeds.values()].sort((a, b) => b.weight - a.weight);
-  // Reserve seed space for both services so one large library cannot crowd out the other.
+  // Choose the strongest preferences from Ripple saves only.
   const chosen = [...new Map([...allSeeds.filter(a => a.source.startsWith('Saved on Ripple')).slice(0, 3), ...allSeeds.slice(0, 8)].map(a => [a.id, a])).values()].slice(0, 8);
   // Artist-only Ripple libraries also need songs from the artists the user saved.
   const knownSongs = [];
