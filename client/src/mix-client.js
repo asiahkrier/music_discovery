@@ -1,5 +1,5 @@
 import { supabase } from './account-client.js';
-export async function rippleMix(path, method = 'GET', body, signal) {
+export async function rippleMix(path, { method = 'GET', body, signal} = {}) {
   const { data } = supabase ? await supabase.auth.getSession() : { data: {} };
   if (!data.session) throw new Error('Log in to Ripple to build your mix.');
   const response = await fetch(`/api/mix/${path}`, { method, signal, headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });

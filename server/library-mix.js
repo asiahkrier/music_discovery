@@ -4,7 +4,10 @@ import { randomBytes } from 'node:crypto';
 import { buildMix, mixPreferences } from './ripple-mix.js';
 
 const fail = (message, status = 503) => Object.assign(new Error(message), { status });
-const checked = result => { if (result.error) throw fail('Could not load or save your Ripple Mix. Please try again.'); return result.data; };
+const checked = result => {
+  if (result.error) throw fail('Could not load or save your Ripple Mix. Please try again.');
+  return result.data;
+};
 export function libraryMixPreferences(value = {}) {
   const { adventure, dismissed } = mixPreferences(value);
   return { adventure, dismissed };
