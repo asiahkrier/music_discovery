@@ -34,11 +34,17 @@ export default function SearchSuggestions({ kind, query, setQuery, country, onSe
     if (event.key === 'Escape') { setOpen(false); return; }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault(); setOpen(true);
-      setActive(previous => items.length ? (previous + (event.key === 'ArrowDown' ? 1 : items.length - 1) + items.length) % items.length : -1);
+      const step = event.key === 'ArrowDown' ? 1 : items.length - 1;
+      setActive(previous => items.length ? (previous + step + items.length) % items.length : -1);
     } else if (event.key === 'Enter') {
       if (visible && items[active]) { event.preventDefault(); choose(items[active]); }
       else setOpen(false);
     }
+  }
+  let message = 'Finding suggestions…';
+  if (result?.key === key) {
+    const emptyMessage = items.length ? 'Select a suggestion or continue searching.' : 'No suggestions yet. Try more of the name.';
+    message = result.error || emptyMessage;
   }
   return <div className="search-suggestions" ref={root} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
     <div className="search"><label className="sr-only" htmlFor={id}>{label}</label><span aria-hidden="true">⌕</span>
@@ -46,10 +52,10 @@ export default function SearchSuggestions({ kind, query, setQuery, country, onSe
       <button type="submit" onClick={() => setOpen(false)}>Find {kind === 'artist' ? 'artists' : 'songs'} ↗</button>
     </div>
     {visible && <div className="suggestion-panel" >
-      <output id={`${id}-status`} aria-live="polite">{result?.key !== key ? 'Finding suggestions…' : result.error || (items.length ? 'Select a suggestion or continue searching.' : 'No suggestions yet. Try more of the name.')}</output>
-      <ul role="listbox" aria-label={`${kind} suggestions`} id={`${id}-suggestions`}>{items.map((item, index) => <li role="presentation" key={item.id}><button type="button" role="option" id={`${id}-option-${index}`} aria-selected={index === active} className={index === active ? 'suggestion-active' : ''} onMouseDown={event => event.preventDefault()} onClick={() => choose(item)}>
+      <output id={`${id}-status`} aria-live="polite">{message}</output>
+      <div role="listbox" aria-label={`${kind} suggestions`} id={`${id}-suggestions`}>{items.map((item, index) => <button key={item.id} type="button" role="option" id={`${id}-option-${index}`} aria-selected={index === active} className={index === active ? 'suggestion-active' : ''} onMouseDown={event => event.preventDefault()} onClick={() => choose(item)}>
         {item.image && <img src={item.image} alt=""/>}<span><strong>{item.name || item.title}</strong><small>{kind === 'artist' ? 'Artist' : item.artist}</small></span>
-      </button></li>)}</ul>
+      </button>)}</div>
     </div>}
   </div>;
 }

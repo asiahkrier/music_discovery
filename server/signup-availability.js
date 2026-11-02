@@ -1,3 +1,4 @@
+import { validEmail } from '../client/src/email-validation.js';
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 
@@ -14,7 +15,7 @@ export function signupAvailabilityRouter({ url, secret, clientFactory = createCl
     record.count++; attempts.set(address, record);
     const field = req.body?.field;
     const value = typeof req.body?.value === 'string' ? req.body.value.trim().toLowerCase() : '';
-    const valid = field === 'username' ? /^[a-z0-9_]{3,24}$/.test(value) : field === 'email' && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    const valid = field === 'username' ? /^[a-z0-9_]{3,24}$/.test(value) : field === 'email' && validEmail(value);
     if (!valid) return res.status(400).json({ error: 'Enter a valid username or email address.' });
     if (!url || !secret) return res.status(503).json({ error: 'Availability checks are temporarily unavailable. Please try again.' });
     try {

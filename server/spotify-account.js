@@ -8,7 +8,12 @@ import { buildMix, mixPreferences } from './ripple-mix.js';
 const SCOPES = 'user-library-read user-library-modify user-top-read user-read-recently-played playlist-read-private playlist-read-collaborative playlist-modify-private';
 const ID = /^[A-Za-z0-9]{22}$/;
 const failure = (message, status = 502) => Object.assign(new Error(message), { status });
-const check = result => { if (result.error) throw failure('Could not save your Spotify connection. Please try again.'); return result.data; };
+const check = result => {
+  if (result.error) {
+    throw failure('Could not save your Spotify connection. Please try again.');
+  }
+  return result.data;
+};
 const authOptions = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
 
 export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redirectUri, encryptionKey, fetchImpl = fetch, clientFactory = createClient, related } = {}) {

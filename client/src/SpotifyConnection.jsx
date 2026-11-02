@@ -29,6 +29,7 @@ export default function SpotifyConnection() {
     } catch (e) { setError(e.message); }
     finally { guard.current = false; setBusy(false); }
   }
+  const connectionLabel = status?.connected ? 'Disconnect Spotify' : 'Connect Spotify';
   const callback = new URLSearchParams(window.location.search).get('spotify');
   return <section className="account-panel spotify-connection">
     <p className="eyebrow">CONNECTED ACCOUNTS</p><h2>Your music, together.</h2>
@@ -37,7 +38,7 @@ export default function SpotifyConnection() {
     {callback === 'connected' && <output>Spotify connection completed.</output>}
     {['failed', 'declined'].includes(callback) && <p role="alert">{callback === 'declined' ? 'Spotify connection was canceled. You can try again.' : 'Spotify could not be connected. Please try again and check app access.'}</p>}
     {status?.connected && <p>Connected as <strong>{status.displayName}</strong></p>}
-    <button type="button" disabled={busy || !user} onClick={() => void action(Boolean(status?.connected))}>{busy ? 'Please wait…' : status?.connected ? 'Disconnect Spotify' : 'Connect Spotify'}</button>
+    <button type="button" disabled={busy || !user} onClick={() => void action(Boolean(status?.connected))}>{busy ? 'Please wait…' : connectionLabel}</button>
     {status?.connected && <p className="fine-print">Disconnect removes imported personalization from Ripple. To revoke Spotify’s permission too, remove Ripple in <a href="https://www.spotify.com/account/apps/" target="_blank" rel="noreferrer">your Spotify apps</a>.</p>}
     {message && <output>{message}</output>}{error && <p role="alert">{error}</p>}
   </section>;
@@ -57,5 +58,6 @@ export function SpotifySaveButton({ id }) {
     } catch (e) { setError(e.message); }
     finally { guard.current = false; setBusy(false); }
   }
-  return <div className="spotify-save-action"><button type="button" className="account-button" disabled={busy || saved} onClick={() => void save()}>{busy ? 'Saving…' : saved ? 'Saved to Spotify' : 'Save to Spotify'}</button>{error && <p role="alert">{error}</p>}</div>;
+  const saveLabel = saved ? 'Saved to Spotify' : 'Save to Spotify';
+  return <div className="spotify-save-action"><button type="button" className="account-button" disabled={busy || saved} onClick={() => void save()}>{busy ? 'Saving…' : saveLabel}</button>{error && <p role="alert">{error}</p>}</div>;
 }
