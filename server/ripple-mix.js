@@ -1,11 +1,15 @@
+// Preserve ordered pairs and a maximum of two concurrent catalog operations.
+export async function inPairs(items, action, offset = 0) {
+  if (offset >= items.length) return [];
+  const batch = await Promise.all(items.slice(offset, offset + 2).map(action));
+  return batch.concat(await inPairs(items, action, offset + 2));
+}
 import { createHash } from 'node:crypto';
 
 export function mixPreferences(value = {}) {
   const adventure = Number(value.adventure ?? 60);
   return {
     adventure: Number.isFinite(adventure) ? Math.min(100, Math.max(0, adventure)) : 60,
-    saved: value.saved !== false, top: value.top !== false, recent: value.recent !== false,
-    playlists: Array.isArray(value.playlists) ? [...new Set(value.playlists.filter(id => /^[A-Za-z0-9]{22}$/.test(id)))].slice(0, 3) : [],
     dismissed: Array.isArray(value.dismissed) ? [...new Set(value.dismissed.filter(id => /^[A-Za-z0-9]{22}$/.test(id)))].slice(-200) : [],
   };
 }
@@ -18,7 +22,8 @@ export function rankMix(candidates, { knownTracks = [], knownArtists = [], dismi
     if (!item?.id || !item.artistId || hidden.has(item.id) || hidden.has(item.artistId)) continue;
     const relevance = Math.min(1, Math.max(0, Number(item.relevance) || 0));
     if (relevance < 0.15) continue;
-    const novelty = tracks.has(item.id) ? 0 : artists.has(item.artistId) ? 0.4 : 1;
+    const artistNovelty = artists.has(item.artistId) ? 0.4 : 1;
+    const novelty = tracks.has(item.id) ? 0 : artistNovelty;
     const niche = item.smallerAudience === true ? 1 : 0;
     const jitter = createHash('sha256').update(`${seed}:${item.id}`).digest().readUInt32BE(0) / 0xffffffff;
     const score = 0.65 * relevance + (adventure / 100) * (0.2 * novelty + 0.05 * niche) + 0.03 * jitter;
@@ -51,7 +56,7 @@ export function rankMix(candidates, { knownTracks = [], knownArtists = [], dismi
 }
 
 export function asMixTrack(track, reason, relevance = 0.7) {
-  if (!track || track.type !== 'track' || !/^[A-Za-z0-9]{22}$/.test(track.id || '') || track.is_local || track.is_playable === false || track.restrictions || !track.artists?.[0]?.id) return null;
+  if (track?.type !== 'track' || !/^[A-Za-z0-9]{22}$/.test(track.id || '') || track.is_local || track.is_playable === false || track.restrictions || !track.artists?.[0]?.id) return null;
   return { id: track.id, name: track.name, artistId: track.artists[0].id, artist: track.artists.map(a => a.name).join(', '), image: track.album?.images?.[0]?.url || '', reason, relevance };
 }
 
@@ -80,7 +85,7 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   async function source(path, label, consume) {
     try { consume(await api(path)); } catch (error) {
       if (error.status === 401 || error.status === 429) throw error;
-      warnings.push(`${label} could not be included. Other selected sources were used.`);
+      warnings.push(`${label} could not be included. Other Ripple favorites were used.`);
     }
   }
   async function songsForArtist(artist, reason, relevance, output, extra = {}) {
@@ -93,44 +98,32 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   }
   const rippleArtists = library.filter(i => i.kind === 'artist');
   rippleArtists.slice(0, 20).forEach(i => addArtist({ id: i.spotify_id, name: i.name }, 5, `Saved on Ripple: ${i.name}`));
-  // Sequential bounded groups avoid a burst of catalog requests.
+  // Resolve at most ten saved songs before choosing artist seeds.
   await Promise.all(library.filter(i => i.kind === 'song').slice(0, 10).map(i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple'))));
   const allSeeds = [...seeds.values()].sort((a, b) => b.weight - a.weight);
   // Choose the strongest preferences from Ripple saves only.
-  const chosen = [...new Map([...allSeeds.filter(a => a.source.startsWith('Saved on Ripple')).slice(0, 3), ...allSeeds.slice(0, 8)].map(a => [a.id, a])).values()].slice(0, 8);
+  const chosen = allSeeds.slice(0, 8);
   // Artist-only Ripple libraries also need songs from the artists the user saved.
   const knownSongs = [];
-  for (let group = 0; group < chosen.length; group += 2) {
-    await Promise.all(chosen.slice(group, group + 2).map(artist => songsForArtist(
-      artist, 'From an artist you saved or listen to', 0.8, knownSongs,
-    )));
-  }
+  await inPairs(chosen, artist => songsForArtist(
+    artist, 'From an artist you saved on Ripple', 0.8, knownSongs,
+  ));
   const candidates = [];
-  let relatedCount = 0;
-  for (let group = 0; group < chosen.length; group += 2) {
-    const results = await Promise.all(chosen.slice(group, group + 2).map(async artist => {
-      const response = await related(artist.id, 'US');
-      return { artist, response };
-    }));
-    for (const { artist, response } of results) {
-      for (const candidate of balancedArtists(response.artists, 5)) {
-        relatedCount++;
-        candidates.push({ candidate, basedOn: artist.name, sourceUrl: response.sourceUrl });
-      }
+  const results = await inPairs(chosen, async artist => ({ artist, response: await related(artist.id, 'US') }));
+  for (const { artist, response } of results) {
+    for (const candidate of balancedArtists(response.artists, 5)) {
+      candidates.push({ candidate, basedOn: artist.name, sourceUrl: response.sourceUrl });
     }
   }
   const discovery = balancedArtists(
     [...new Map(candidates.map(c => [c.candidate.id, c])).values()], 14, item => item.candidate,
   );
   const discovered = [];
-  for (let group = 0; group < discovery.length; group += 2) {
-    await Promise.all(discovery.slice(group, group + 2).map(async ({ candidate, basedOn, sourceUrl }) => {
-      await songsForArtist(candidate, `Because you like ${basedOn}`, candidate.score, discovered, {
-        smallerAudience: candidate.smallerAudience === true, sourceUrl,
-      });
-    }));
-  }
-  if (!relatedCount) warnings.push('No matched discoveries were available. This mix uses your selected favorites; try refreshing later.');
+  await inPairs(discovery, ({ candidate, basedOn, sourceUrl }) => songsForArtist(
+    candidate, `Because you like ${basedOn}`, candidate.score, discovered,
+    { smallerAudience: candidate.smallerAudience === true, sourceUrl },
+  ));
+  if (!candidates.length) warnings.push('No matched discoveries were available. This mix uses your selected favorites; try refreshing later.');
   const tracks = rankMix([...familiar, ...knownSongs, ...discovered], { knownTracks: familiar.map(t => t.id), knownArtists: [...seeds.keys()], ...preferences, seed });
   return { tracks, warnings: [...new Set(warnings)], generatedAt: new Date().toISOString(), seedCount: chosen.length };
 }

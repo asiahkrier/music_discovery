@@ -1,3 +1,17 @@
+async function verifySignupAvailability(values) {
+  const fields = ['username', 'email'];
+  const availability = await Promise.all(fields.map(field => checkSignupAvailability(field, values[field])));
+  const taken = fields.find((_field, index) => !availability[index]);
+  if (taken) throw new Error(takenMessage(taken));
+}
+async function handleSignupError(error, login, username) {
+  if (!error) return;
+  if (!login && (error.code === 'unexpected_failure' || error.message.includes('Database'))) {
+    await checkUsernameAvailable(supabase, username);
+    throw new Error('We couldn’t create your account right now. Please try again.');
+  }
+  throw error;
+}
 import useSignupAvailability from './useSignupAvailability.js';
 import SongArtwork from './SongArtwork.jsx';
 import React, { useState, useEffect, useRef } from "react";
@@ -48,9 +62,7 @@ function AuthForm() {
     setBusy(true);
     try {
       if (!login) {
-        const availability = await Promise.all(['username', 'email'].map(field => checkSignupAvailability(field, values[field])));
-        if (!availability[0]) throw new Error(takenMessage('username'));
-        if (!availability[1]) throw new Error(takenMessage('email'));
+        await verifySignupAvailability(values);
       }
       const credentials = {
         email: values.email.trim(),
@@ -67,19 +79,7 @@ function AuthForm() {
           });
       const emailFeedback = login ? '' : signupEmailFeedback(e, data);
       if (emailFeedback) throw new Error(emailFeedback);
-      if (e) {
-        // A concurrent signup may have claimed the username after our first check.
-        if (
-          !login &&
-          (e.code === "unexpected_failure" || e.message.includes("Database"))
-        ) {
-          await checkUsernameAvailable(supabase, values.username);
-          throw new Error(
-            "We couldn’t create your account right now. Please try again.",
-          );
-        }
-        throw e;
-      }
+      await handleSignupError(e, login, values.username);
       if (!data.session) {
         setMessage(
           "Check your email to confirm your account. If you already have an account, log in instead.",

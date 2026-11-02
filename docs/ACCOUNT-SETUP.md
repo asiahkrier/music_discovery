@@ -2,11 +2,11 @@
 
 ## Signup and login
 
-The My account header button opens signup/login. Usernames use 3–24 letters, numbers or underscores and are stored lowercase under a unique database constraint. Passwords require at least 12 characters and matching confirmation. A boolean Supabase function checks username availability; a failed database signup is rechecked for concurrent claims. Supabase Auth owns email uniqueness, password hashing and sessions. No service-role key is used in the browser.
+The header avatar menu opens My profile, which shows signup/login for signed-out visitors. Usernames use 3–24 letters, numbers or underscores and are stored lowercase under a unique database constraint. Passwords require at least 12 characters and matching confirmation. A boolean Supabase function checks username availability; a failed database signup is rechecked for concurrent claims. Supabase Auth owns email uniqueness, password hashing and sessions. No service-role key is used in the browser.
 
 Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the root `.env` for local development and in Render before the build. These values are embedded by Vite at build time; rebuild after changing them. Never use a secret/service-role key for a VITE variable. `.env` is ignored by Git.
 
-For a new Supabase project, apply `supabase/001_accounts.sql` through `004_username_availability.sql` in numeric order. 001 includes the shared profile, avatar and library schema. 002 restricts avatar uploads to active profiles. The discarded birthday/age and terms-consent setup has been removed; 003 safely removes its legacy trigger/function if present and restores basic profile creation. Migration numbers remain unchanged for existing installations. Do not rerun 001 on an already initialized project. The existing Ripple project already has all four original migrations applied and does not need them rerun for this UI update. Historical consent columns may remain unused in existing databases; this cleanup does not delete stored data or change the live database.
+For a new Supabase project, apply the numbered SQL migrations in `supabase/` through `007_ripple_mixes.sql` in numeric order. 001 includes the shared profile, avatar and library schema. 002 restricts avatar uploads to active profiles. The discarded birthday/age and terms-consent setup has been removed; 003 safely removes its legacy trigger/function if present and restores basic profile creation. Migration numbers remain unchanged for existing installations. Do not rerun 001 on an already initialized project. For an existing project, apply only migrations that have not already been applied. Migration 005 adds optional Spotify connections, 006 adds email availability, and 007 adds independent Ripple Mix storage. Historical consent columns may remain unused in existing databases; this cleanup does not delete stored data or change the live database.
 
 Enable email/password signup and email confirmation in Supabase Auth. Set its password minimum to 12 characters. Add local and Render origins to the Auth redirect allowlist, and configure email delivery. Confirm-email signup displays instructions rather than promising that an existing email created another account.
 
@@ -14,7 +14,7 @@ Run `npm run dev`, then open `/?view=account`. The dev-only sample profile does 
 
 ## Scope
 
-The application includes registration, login/logout, profile customization, avatar uploads and saved artists/songs. Account deletion, age screening, and terms/privacy screens are deferred.
+The application includes registration, login/logout, profile customization, avatar uploads and saved artists/songs. Account settings includes email/password changes and account deletion. Age screening and terms/privacy screens remain deferred.
 
 ## Validation before marking Done
 

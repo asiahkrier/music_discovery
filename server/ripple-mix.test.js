@@ -33,11 +33,11 @@ test('adventurous mix boosts relevant smaller artists but excludes irrelevant ma
 test('preferences bound input and unavailable songs cannot enter the mix', () => {
   assert.equal(mixPreferences({ adventure: 'bogus' }).adventure, 60);
   assert.equal(mixPreferences({ adventure: 900 }).adventure, 100);
-  assert.equal(mixPreferences({ playlists: ['invalid', id(1), id(2), id(3), id(4)] }).playlists.length, 3);
+  assert.deepEqual(mixPreferences({ saved: true, playlists: [id(1)] }), { adventure: 60, dismissed: [] });
   assert.equal(asMixTrack({ type: 'episode', id: id(1) }), null);
   assert.equal(asMixTrack({ type: 'track', id: id(1), is_local: true }), null);
 });
-test('build uses selected sources and exact Spotify artist identity for discovery songs', async () => {
+test('build uses Ripple saves and exact Spotify artist identity for discovery songs', async () => {
   const calls = [];
   const track = (n, artistId) => ({ id: id(n), type: 'track', name: 'Song', artists: [{ id: artistId, name: 'Artist' }], album: { images: [] } });
   const result = await buildMix({
@@ -48,7 +48,7 @@ test('build uses selected sources and exact Spotify artist identity for discover
     },
     related: async () => ({ artists: [{ id: id(50), name: 'Artist', score: 0.8, smallerAudience: true }], sourceUrl: 'https://www.last.fm/' }),
     library: [{ kind: 'artist', spotify_id: id(1), name: 'Seed' }],
-    preferences: mixPreferences({ saved: false, top: false, recent: false }), seed: 'week',
+    preferences: mixPreferences(), seed: 'week',
   });
   assert.equal(result.tracks.length, 1); assert.equal(result.tracks[0].id, id(5));
   assert.ok(calls.every(path => path.startsWith('search?')));

@@ -1,22 +1,26 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes, createHash } from 'node:crypto';
-import { requireRippleUser, mixWeek, claimRebuild, mixSeed, withoutTrack } from './mix-shared.js';
+import { requireRippleUser } from './mix-shared.js';
 import { hash, tokenVault } from './spotify-vault.js';
-import { buildMix, mixPreferences } from './ripple-mix.js';
 
-const SCOPES = 'user-library-read user-library-modify user-top-read user-read-recently-played playlist-read-private playlist-read-collaborative playlist-modify-private';
+const SCOPES = 'user-library-modify';
 const ID = /^[A-Za-z0-9]{22}$/;
 const failure = (message, status = 502) => Object.assign(new Error(message), { status });
-const check = result => { if (result.error) throw failure('Could not save your Spotify connection. Please try again.'); return result.data; };
+const check = result => {
+  if (result.error) {
+    throw failure('Could not save your Spotify connection. Please try again.');
+  }
+  return result.data;
+};
 const authOptions = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
 
-export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redirectUri, encryptionKey, fetchImpl = fetch, clientFactory = createClient, related } = {}) {
+export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redirectUri, encryptionKey, fetchImpl = fetch, clientFactory = createClient } = {}) {
   const router = express.Router();
   const configured = Boolean(url && secret && clientId && clientSecret && redirectUri && Buffer.from(encryptionKey || '', 'base64').length === 32);
   const admin = configured ? clientFactory(url, secret, authOptions) : null;
   const vault = configured ? tokenVault(encryptionKey) : null;
-  const locks = new Map(), cooldowns = new Map();
+  const locks = new Map();
   const cookieName = 'ripple_spotify_oauth';
   const cookieOptions = { httpOnly: true, sameSite: 'lax', secure: redirectUri?.startsWith('https:'), path: '/api/spotify', maxAge: 600000 };
   const connection = user => admin.from('spotify_connections').select('*').eq('user_id', user).maybeSingle();
@@ -84,7 +88,7 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
         if (!response.ok) throw failure('Could not identify Spotify account.');
         const profile = await response.json();
         if (!profile.id) throw failure('Missing Spotify account.');
-        check(await admin.from('spotify_connections').upsert({ user_id: pending.user_id, spotify_user_id: profile.id, display_name: profile.display_name || 'Spotify listener', credentials: vault.seal({ ...token, expires: Date.now() + (token.expires_in || 3600) * 1000 }, pending.user_id), preferences: mixPreferences(), mix: null, updated_at: new Date().toISOString() }));
+        check(await admin.from('spotify_connections').upsert({ user_id: pending.user_id, spotify_user_id: profile.id, display_name: profile.display_name || 'Spotify listener', credentials: vault.seal({ ...token, expires: Date.now() + (token.expires_in || 3600) * 1000 }, pending.user_id), updated_at: new Date().toISOString() }));
       });
       return finish(req.query.error ? 'declined' : 'connected');
     } catch { return finish('failed'); }
@@ -108,7 +112,7 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
   }
   route('get', '/status', async req => {
     const row = check(await connection(req.rippleUser));
-    return { connected: Boolean(row), displayName: row?.display_name || '', preferences: mixPreferences(row?.preferences), mix: row?.mix || null };
+    return { connected: Boolean(row), displayName: row?.display_name || '' };
   });
   route('post', '/connect', async (req, res) => {
     const state = randomBytes(32).toString('base64url'), browser = randomBytes(32).toString('base64url'), verifier = randomBytes(48).toString('base64url');
@@ -121,38 +125,7 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
   route('delete', '/connection', async req => {
     check(await admin.from('spotify_oauth_states').delete().eq('user_id', req.rippleUser));
     check(await admin.from('spotify_connections').delete().eq('user_id', req.rippleUser));
-    cooldowns.delete(req.rippleUser);
     return { disconnected: true };
-  });
-  route('get', '/playlists', async req => {
-    const row = await connected(req.rippleUser), api = await apiFor(req.rippleUser, row);
-    const data = await api('me/playlists?limit=50');
-    return { playlists: (data.items || []).filter(p => p && (p.owner?.id === row.spotify_user_id || p.collaborative)).map(p => ({ id: p.id, name: p.name })), limited: Boolean(data.next) };
-  });
-  route('put', '/preferences', async req => {
-    const row = await connected(req.rippleUser);
-    const preferences = mixPreferences({ ...req.body, dismissed: row.preferences?.dismissed || [] });
-    check(await update(req.rippleUser, { preferences, mix: null }));
-    return { preferences };
-  });
-  route('post', '/dismiss', async req => {
-    if (!ID.test(req.body?.id || '')) throw failure('Choose a valid song.', 400);
-    const row = await connected(req.rippleUser);
-    const preferences = mixPreferences({ ...row.preferences, dismissed: [...(row.preferences?.dismissed || []), req.body.id] });
-    const mix = withoutTrack(row.mix, req.body.id);
-    check(await update(req.rippleUser, { preferences, mix }));
-    return { mix };
-  });
-  route('post', '/mix', async req => {
-    const user = req.rippleUser, row = await connected(user), now = Date.now(), week = mixWeek(now);
-    if (row.mix?.week === week && !req.body?.refresh) return { mix: row.mix };
-    if (!claimRebuild(cooldowns, user, now)) throw failure('Please wait one minute before rebuilding your mix.', 429);
-    const library = check(await admin.from('library_items').select('*').eq('user_id', user).order('created_at', { ascending: false }).limit(100));
-    const api = await apiFor(user, row);
-    const seed = mixSeed(req.body?.refresh, user, week);
-    const mix = { ...await buildMix({ api, related, library: library || [], preferences: mixPreferences(row.preferences), seed }), week };
-    check(await update(user, { mix, updated_at: new Date().toISOString() }));
-    return { mix };
   });
   route('put', '/saved-song', async req => {
     if (!ID.test(req.body?.id || '')) throw failure('Choose a valid song.', 400);
@@ -160,20 +133,6 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
     const query = new URLSearchParams({ uris: `spotify:track:${req.body.id}` });
     await api(`me/library?${query}`, { method: 'PUT' });
     return { saved: true };
-  });
-  route('post', '/export', async req => {
-    const row = await connected(req.rippleUser);
-    if (!row.mix?.tracks?.length) throw failure('Build a mix before creating a playlist.', 400);
-    const api = await apiFor(req.rippleUser, row);
-    // Reuse the recorded playlist on retry if the add-items request failed.
-    let playlist = row.mix.export;
-    if (!playlist) {
-      const created = await api('me/playlists', { method: 'POST', body: JSON.stringify({ name: 'Your Ripple Mix', public: false, description: 'A personal mix of familiar songs and new discoveries, selected by Ripple.' }) });
-      playlist = { id: created.id, url: `https://open.spotify.com/playlist/${created.id}` };
-      check(await update(req.rippleUser, { mix: { ...row.mix, export: playlist } }));
-    }
-    await api(`playlists/${playlist.id}/items`, { method: 'PUT', body: JSON.stringify({ uris: row.mix.tracks.map(t => `spotify:track:${t.id}`) }) });
-    return { playlist };
   });
   return router;
 }
