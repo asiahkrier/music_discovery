@@ -1,6 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes, createHash } from 'node:crypto';
+import { requireRippleUser, mixWeek, claimRebuild, mixSeed, withoutTrack } from './mix-shared.js';
 import { hash, tokenVault } from './spotify-vault.js';
 import { buildMix, mixPreferences } from './ripple-mix.js';
 
@@ -89,16 +90,11 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
     } catch { return finish('failed'); }
   });
   router.use(express.json({ limit: '12kb' }));
-  router.use(async (req, res, next) => {
-    if (!configured) return res.status(503).json({ error: 'Spotify account linking is not configured yet.' });
-    const bearer = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
-    if (!bearer) return res.status(401).json({ error: 'Log in to Ripple first.' });
-    try {
-      const { data, error } = await admin.auth.getUser(bearer);
-      if (error || !data.user) return res.status(401).json({ error: 'Your Ripple session expired. Please log in again.' });
-      req.rippleUser = data.user.id; next();
-    } catch { res.status(503).json({ error: 'Could not verify your Ripple session. Try again.' }); }
-  });
+  router.use(requireRippleUser(admin, {
+    unavailable: 'Spotify account linking is not configured yet.',
+    login: 'Log in to Ripple first.',
+    unverified: 'Could not verify your Ripple session. Try again.',
+  }));
   function route(method, path, handler) {
     router[method](path, async (req, res) => {
       try { res.json(await exclusive(req.rippleUser, () => handler(req, res))); }
@@ -143,20 +139,17 @@ export function spotifyAccountRouter({ url, secret, clientId, clientSecret, redi
     if (!ID.test(req.body?.id || '')) throw failure('Choose a valid song.', 400);
     const row = await connected(req.rippleUser);
     const preferences = mixPreferences({ ...row.preferences, dismissed: [...(row.preferences?.dismissed || []), req.body.id] });
-    const mix = row.mix ? { ...row.mix, tracks: row.mix.tracks.filter(t => t.id !== req.body.id) } : null;
+    const mix = withoutTrack(row.mix, req.body.id);
     check(await update(req.rippleUser, { preferences, mix }));
     return { mix };
   });
   route('post', '/mix', async req => {
-    const user = req.rippleUser, row = await connected(user), now = Date.now();
-    const week = Math.floor((now - Date.UTC(2026, 0, 5)) / 604800000);
+    const user = req.rippleUser, row = await connected(user), now = Date.now(), week = mixWeek(now);
     if (row.mix?.week === week && !req.body?.refresh) return { mix: row.mix };
-    for (const [id, expiry] of cooldowns) if (expiry <= now) cooldowns.delete(id);
-    if (cooldowns.has(user)) throw failure('Please wait one minute before rebuilding your mix.', 429);
-    cooldowns.set(user, now + 60000);
+    if (!claimRebuild(cooldowns, user, now)) throw failure('Please wait one minute before rebuilding your mix.', 429);
     const library = check(await admin.from('library_items').select('*').eq('user_id', user).order('created_at', { ascending: false }).limit(100));
     const api = await apiFor(user, row);
-    const seed = req.body?.refresh ? randomBytes(8).toString('hex') : `${user}:${week}`;
+    const seed = mixSeed(req.body?.refresh, user, week);
     const mix = { ...await buildMix({ api, related, library: library || [], preferences: mixPreferences(row.preferences), seed }), week };
     check(await update(user, { mix, updated_at: new Date().toISOString() }));
     return { mix };
