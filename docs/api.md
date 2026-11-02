@@ -46,10 +46,5 @@ Private server routes require a Supabase bearer token; browser profile/library a
 | `PUT /api/mix/preferences` | Updates adventure level while preserving dismissals. |
 | `POST /api/mix/mix` | Builds/reuses the weekly mix; `{ refresh: true }` requests rebuilding. |
 | `POST /api/mix/dismiss` | Dismisses a song by ID. |
-| `GET /api/spotify/status` | Connection status and display name. |
-| `POST /api/spotify/connect` | Starts optional Spotify authorization. |
-| `GET /api/spotify/callback` | Browser-bound OAuth callback; redirects to Settings. |
-| `DELETE /api/spotify/connection` | Disconnects the current user's Spotify account. |
-| `PUT /api/spotify/saved-song` | Saves a song ID to the connected Spotify library. |
 
-The old Spotify-specific mix, playlist picker and export endpoints are removed. Ripple Mix uses `/api/mix` and Ripple library saves only. See [Spotify linking](spotify-personalization.md).
+All `/api/spotify/*` account endpoints are removed. Ripple Mix uses `/api/mix` and Ripple library saves only. See [Ripple Mix](spotify-personalization.md).

@@ -1,14 +1,13 @@
 import { libraryMixRouter } from './library-mix.js';
 import { signupAvailabilityRouter } from './signup-availability.js';
 import express from 'express';
-import { spotifyAccountRouter } from './spotify-account.js';
 import { accountSettingsRouter } from './account-settings.js';
 import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
 import { createTopTracks } from './top-tracks.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
-export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {}, spotifyAccountOptions = {} } = {}) {
+export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {} } = {}) {
   const app = express();
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
   const spotify = createSpotify({ ...songOptions, fetchImpl });
@@ -18,7 +17,6 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   app.use('/api/signup-availability', signupAvailabilityRouter(accountOptions));
   app.use('/api/account', accountSettingsRouter(accountOptions));
   app.use('/api/mix', libraryMixRouter({ ...accountOptions, api: spotify.catalog, related }));
-  app.use('/api/spotify', spotifyAccountRouter({ ...spotifyAccountOptions, fetchImpl }));
   const route = (path, handler) => app.get(path, async (req, res) => {
     const country = req.query.country || 'US';
     if (typeof country !== 'string' || !/^[A-Z]{2}$/.test(country)) return res.status(400).json({ error: 'Use a two-letter country code.' });

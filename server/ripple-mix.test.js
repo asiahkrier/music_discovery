@@ -1,18 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenVault } from './spotify-vault.js';
 import { rankMix, mixPreferences, buildMix, asMixTrack } from './ripple-mix.js';
 const id = n => String(n).padStart(22, '0');
 
-test('tokens are authenticated, encrypted, and bound to one Ripple user', () => {
-  const vault = tokenVault(Buffer.alloc(32, 9).toString('base64'));
-  const encrypted = vault.seal({ refresh_token: 'secret-refresh-token' }, 'alice');
-  assert.ok(!encrypted.includes('secret-refresh-token'));
-  assert.equal(vault.open(encrypted, 'alice').refresh_token, 'secret-refresh-token');
-  assert.throws(() => vault.open(encrypted, 'bob'));
-  assert.throws(() => vault.open(encrypted.slice(0, -5) + 'AAAAA', 'alice'));
-  assert.throws(() => tokenVault('short'));
-});
 test('mix suppresses duplicates and dismissals and caps each artist at two songs', () => {
   const input = Array.from({ length: 10 }, (_, i) => ({ id: id(i), artistId: id(100 + Math.floor(i / 4)), relevance: 0.8 }));
   const result = rankMix([...input, input[0]], { dismissed: [id(0)], seed: 'week1' });

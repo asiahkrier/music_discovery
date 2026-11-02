@@ -62,7 +62,7 @@ function MixContent({ onProfile }) {
   if (!user) return <section className="account-panel"><h1>Your Ripple Mix</h1><p>Sign in to turn your saved Ripple artists and songs into a personal mix.</p><button className="account-button" type="button" onClick={onProfile}>Log in to Ripple</button></section>;
   return <section className="ripple-mix settings-page">
     <div className="mix-heading"><div><p className="eyebrow">FAMILIAR FEELING. NEW DISCOVERIES.</p><h1>Your Ripple Mix</h1><p>Your favorites are the starting point. See where they take you.</p></div><span className="mix-badge">Made for your ears</span></div>
-    {demo && <p className="notice">Design preview — example cards only. Spotify is not connected and nothing is saved to Spotify.</p>}
+    {demo && <p className="notice">Design preview — example cards only. No account data is changed.</p>}
     {error && <p role="alert">{error}</p>}{notice && <output>{notice}</output>}
     {!status && !error && <output>Loading your mix…</output>}
     {!status && error && <button type="button" onClick={() => window.location.reload()}>Try again</button>}

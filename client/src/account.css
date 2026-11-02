@@ -490,7 +490,7 @@ button:disabled {
   align-items: center;
   padding: 15px 0;
   border-top: 1px solid #39452f;
-  grid-template-columns: 42px minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
 }
 
 .saved-song strong {
@@ -747,7 +747,7 @@ button:disabled {
 .mix-art img { width:100%; height:100%; object-fit:cover; }
 .mix-number { position:absolute; bottom:12px; right:14px; color:#fff; background:#152010cc; border-radius:16px; padding:5px 10px; }
 .mix-track-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:20px; }
-.spotify-connection output, .ripple-mix > output { display:block; margin:16px 0; }
+.ripple-mix > output { display:block; margin:16px 0; }
 @media(max-width:900px) { .mix-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .mix-heading { align-items:flex-start; } }
 @media(max-width:600px) { .mix-grid { grid-template-columns:1fr; } .mix-heading { display:block; } .mix-badge { display:inline-block; margin-top:12px; } .mix-slider strong { float:none; display:block; } }
 .mix-explanation { margin:20px 0; color:#aeb5a5; }
@@ -762,7 +762,3 @@ button:disabled {
 .account-dropdown summary.account-avatar::-webkit-details-marker { display:none; }
 .account-avatar img { display:block; width:100%; height:100%; border-radius:50%; object-fit:cover; }
 .account-dropdown[open] .account-avatar, .account-dropdown .account-avatar:hover { border-color:var(--lime); }
-
-.saved-song .spotify-save-action { justify-self: start; min-width: 0; }
-.saved-song .spotify-save-action .account-button { width: auto; margin: 0; padding: 9px 12px; font-size: 13px; white-space: nowrap; }
-.spotify-save-action [role="alert"] { max-width: 240px; font-size: 13px; }
