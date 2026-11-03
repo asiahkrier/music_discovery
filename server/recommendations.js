@@ -1,15 +1,13 @@
+import { cleanTags as cleanTagNames } from './lastfm-tags.js';
+
 const normalize = value => value.normalize('NFKC').trim().toLowerCase();
 const empty = () => ({ artists: [], method: 'lastfm', basis: 'No similar artists could be matched to Spotify right now.' });
 
-// Tags that describe the listener, not the music.
-const JUNK_TAGS = new Set(['seen live', 'favorites', 'favourite', 'female vocalists', 'male vocalists', 'all']);
-
+// Cleaned tags from a Last.fm artist.getInfo response (junk and decade tags removed).
 function cleanTags(data) {
   const tags = data?.artist?.tags?.tag;
   if (!Array.isArray(tags)) return [];
-  return tags
-    .map(t => normalize(String(t?.name || '')).replace(/[^\p{L}\p{N} -]/gu, '').replace(/\s+/g, ' ').trim())
-    .filter(t => t && !JUNK_TAGS.has(t) && !/^\d{2,4}s$/.test(t)); // drops decade tags like "90s" or "2010s"
+  return cleanTagNames(tags.map(t => t?.name));
 }
 
 // Tags both artists have.
@@ -51,7 +49,8 @@ function rankedArtists(data, name) {
   return [...unique.values()].sort((a, b) => b.score - a.score).slice(0, 30)
 }
 
-async function matchArtist(candidate, spotify, country) {
+// Also used by microgenre discovery to turn Last.fm names into Spotify artists.
+export async function matchArtist(candidate, spotify, country) {
   try {
     const results = await spotify.search(candidate.name, country);
        const exact = results.filter(a => normalize(a.name) === normalize(candidate.name));

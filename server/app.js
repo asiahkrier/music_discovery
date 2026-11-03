@@ -5,6 +5,8 @@ import { accountSettingsRouter } from './account-settings.js';
 import { createRecommendations } from './recommendations.js';
 import { createLastfm } from './lastfm.js';
 import { createTopTracks } from './top-tracks.js';
+import { createMicrogenres } from './microgenres.js';
+import { cleanTag } from './lastfm-tags.js';
 import { fileURLToPath } from 'node:url';
 import { createSpotify, validId } from './spotify.js';
 export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {} } = {}) {
@@ -13,6 +15,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   const spotify = createSpotify({ ...songOptions, fetchImpl });
   const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
   const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
+  const microgenres = createMicrogenres({ spotify, apiKey: lastfmApiKey, fetchImpl });
   app.disable('x-powered-by');
   app.use('/api/signup-availability', signupAvailabilityRouter(accountOptions));
   app.use('/api/account', accountSettingsRouter(accountOptions));
@@ -48,6 +51,18 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
   route('/api/related-artists', async ({ id }, country) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
     return related(id, country);
+  });
+  // Microgenres from the saved artist names the browser sends (no account data is read on the server).
+  app.post('/api/microgenres', express.json({ limit: '8kb' }), async (req, res) => {
+    const artists = req.body?.artists;
+    if (!Array.isArray(artists) || artists.length > 50 || artists.some(a => typeof a !== 'string' || a.length > 200)) {
+      return res.status(400).json({ error: 'Send a list of artist names.' });
+    }
+    try { res.json(await microgenres.forArtists(artists)); } catch { res.status(502).json({ error: 'Microgenres are temporarily unavailable. Please try again.' }); }
+  });
+  route('/api/microgenre-artists', async ({ tag }, country) => {
+    if (typeof tag !== 'string' || tag.length > 40 || !cleanTag(tag) || cleanTag(tag) !== tag) throw Object.assign(new Error('Choose a microgenre.'), { status: 400 });
+    return microgenres.artistsForTag(tag, country);
   });
   route('/api/songs', async ({ q }, country) => {
     if (!q) throw Object.assign(new Error('Enter a song or artist.'), { status: 400 });
