@@ -28,6 +28,10 @@ export default function RelatedArtists({ artist, country, onSelect }) {
       {!data.artists.length && <p className="fine-print">{data.basis}</p>}
       <div className="discovery-cards">{shown.map((a, index) => <DiscoveryCard key={a.id} artist={a} index={index} onSelect={onSelect}/>)}</div>
       {data.sourceUrl && <p className="fine-print"><a className="photo-credit" href={data.sourceUrl} target="_blank" rel="noreferrer">Source: Last.fm ↗</a></p>}
+      {data.artists.length > 0 && <details className="mix-explanation ripple-score-explanation"><summary>How these are ranked</summary>
+        <p className="fine-print">Ripple ranks these artists with its own <strong>Ripple Score</strong>: 50% similarity (how often people listen to both artists on Last.fm), 30% shared genre tags (including microgenres like digicore or shoegaze), and 20% discovery (a boost for artists smaller than {artist.name}).</p>
+        <p className="fine-print">Shared tags are the tags both artists have divided by all of their different tags. Discovery is 1 ÷ (1 + their listeners ÷ {artist.name}’s listeners), so smaller artists score higher. The “Shared genre” badge shows the top tags they have in common. Listener counts come from Last.fm, not Spotify monthly listeners.</p>
+      </details>}
     </>}
   </section>;
 }
