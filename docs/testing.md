@@ -14,9 +14,11 @@ Before merging or releasing with real credentials, manually check:
 - Mobile layout and keyboard navigation remain usable.
 - Spotify playback works in the target browser/region, or its direct link remains available.
 
-Automated tests do not prove Spotify app eligibility, live catalog coverage, the quality of genre recommendations, or audio playback inside Spotify's iframe. No live credentialed catalog test was possible during this update because credentials were not configured. A public SZA oEmbed request was verified during local development.
+Automated tests do not prove Spotify app eligibility, live catalog coverage, the quality of genre recommendations, or audio playback inside Spotify's iframe. Record live verification against the actual deployment; old development checks are not evidence for the current release.
 
 The existing Trivy workflow reports dependencies but uses `exit-code: '0'`, so review counts in the artifact; a green job does not mean zero vulnerabilities. Prior sprint reports describe their own scanned commits and are not evidence for this update. SonarQube and Trivy results for this PR must be checked after CI runs.
 
 
 Account tests cover validation, owner isolation, availability checks and settings. Mix tests cover Ripple-only inputs, persistence, ranking, balance and dismissals. Retired Spotify-account endpoints are checked for rejection. Live Supabase confirmation and playback checks require suitable accounts; mocked tests do not verify them.
+
+Recovery tests simulate provider limits, queued requests, process restarts, expired data, and country isolation. Mix history tests verify exclusion of recent artists and songs. Provider fixtures do not consume Spotify quota.
