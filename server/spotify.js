@@ -79,6 +79,29 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     return artist({ id, name: data.title, images: data.thumbnail_url ? [{ url: data.thumbnail_url }] : [] });
   }
   async function search(q, country, offset = 0) { const data = await api('search', { q, type: 'artist', market: country, limit: 10, offset }); return (data.artists?.items || []).filter(a => validId(a.id)).map(artist); }
+  const matches = new Map();
+  async function resolveArtist(name, country) {
+    const normalized = name.normalize('NFKC').trim().toLowerCase();
+    const key = `artist-match:${country}:${normalized}`;
+    const cached = matches.get(key);
+    if (cached?.until > now()) return cached.promise;
+    const promise = (async () => {
+      const saved = await store?.get(key);
+      if (saved) return saved;
+      const results = await search(normalized, country);
+      const exact = results.filter(a => a.name.normalize('NFKC').trim().toLowerCase() === normalized);
+      const match = exact.find(a => a.image) || exact[0] || null;
+      if (match) await store?.set(key, match, now() + retention);
+      return match;
+    })();
+    if (matches.size >= 500) matches.delete(matches.keys().next().value);
+    matches.set(key, { promise, until: now() + 3600000 });
+    try {
+      const match = await promise;
+      if (!match) matches.delete(key);
+      return match;
+    } catch (error) { matches.delete(key); throw error; }
+  }
   const cache = new Map();
   const recentPools = new Map();
   const genres = ['pop', 'hip-hop', 'r&b', 'k-pop', 'house', 'shoegaze', 'ambient', 'indie rock'];
@@ -134,5 +157,5 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     if (endpoint !== 'search' && !/^tracks\/[A-Za-z0-9]{22}$/.test(endpoint)) throw fail('Unsupported catalog request.', 400);
     return api(endpoint, Object.fromEntries(new URLSearchParams(query)));
   }
-  return { configured, profile, search, discover, songs, songArtwork, catalog };
+  return { configured, profile, search, resolveArtist, discover, songs, songArtwork, catalog };
 }

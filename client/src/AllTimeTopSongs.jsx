@@ -4,9 +4,11 @@ const duration = ms => ms ? `${String(Math.floor(ms / 60000)).padStart(2, '0')}:
 
 // All-time most-listened songs (Last.fm), styled as a player card; each song plays through Spotify.
 export default function AllTimeTopSongs({ artist, country }) {
+  const [requested, setRequested] = useState(false);
   const [data, setData] = useState(null);
   const [current, setCurrent] = useState(null);
   useEffect(() => {
+    if (!requested) return undefined;
     const controller = new AbortController();
     setData(null);
     setCurrent(null);
@@ -20,7 +22,7 @@ export default function AllTimeTopSongs({ artist, country }) {
       .then(result => { if (!controller.signal.aborted) setData(result); })
       .catch(() => { if (!controller.signal.aborted) setData({ tracks: [] }); });
     return () => controller.abort();
-  }, [artist.id, country]);
+  }, [artist.id, country, requested]);
   const playable = data?.tracks.filter(track => track.spotifyId) || [];
   const nowPlaying = playable.find(track => track.spotifyId === current);
   return <section className="all-time-songs" aria-label="All-time top songs">
@@ -35,7 +37,8 @@ export default function AllTimeTopSongs({ artist, country }) {
         </div>
       </div>
       {nowPlaying && <iframe key={nowPlaying.spotifyId} className="atp-embed" title={`${nowPlaying.title} Spotify preview`} src={`https://open.spotify.com/embed/track/${nowPlaying.spotifyId}`} height="80" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"/>}
-      {!data && <output className="atp-status">Loading all-time top songs…</output>}
+      {!requested && <button type="button" className="back-results" onClick={() => setRequested(true)}>Load all-time top songs</button>}
+      {requested && !data && <output className="atp-status">Loading all-time top songs…</output>}
       {data && !data.tracks.length && <p className="atp-status">All-time rankings aren’t available for this artist yet.</p>}
       {data?.tracks.length > 0 && <ol className="atp-list">{data.tracks.map((track, index) => {
         const active = track.spotifyId && track.spotifyId === current;

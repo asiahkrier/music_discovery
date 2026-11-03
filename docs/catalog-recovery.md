@@ -11,3 +11,13 @@ The mix still excludes the previous three mixes' artists and songs. Cached catal
 This cannot end an existing Spotify cooldown or supply uncached artists while Spotify is unavailable. The persistent cache starts filling after successful requests. Existing saved mixes remain in `ripple_mixes`.
 
 If Supabase cache access fails or the migration is missing, catalog requests still run with process-local protection. Check Render logs for the generic cache write warning. Periodically delete expired cache rows using the final statement in the migration; expiry is enforced on reads even before cleanup.
+
+## Request budgets
+
+- Suggestions wait 650 ms after typing and reuse up to 100 recent searches for five minutes, separately by country and search type.
+- Verified exact-name artist matches use the existing server-only cache table for 24 hours; concurrent lookups share a promise. Failed and unmatched lookups are not saved as successful matches.
+- Related artists match at most 12 candidates, sampled across Last.fm's similarity list. Ripple still ranks those matches by similarity, tag overlap, and relative audience size.
+- Mixes rotate up to four artist seeds and five saved-song seeds, then fetch tracks for up to eight discovery artists. The existing history exclusions and balanced selection remain in effect. Sparse catalogs may produce shorter mixes.
+- Microgenres start with six artists; Show more requests up to twelve. Prior verified matches are reused.
+- The additional all-time songs list loads only after clicking its button. The regular Spotify artist embed is unchanged.
+- The homepage's ten-second shuffle remains browser-only and does not issue a catalog request on every shuffle.

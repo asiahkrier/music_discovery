@@ -43,15 +43,15 @@ test('provider failures and absent credentials never fall back to name searches'
   for(const result of results) assert.deepEqual(result.artists,[]);
 });
 
-test('Spotify matching uses at most three concurrent calls and returns 12 artists',async()=>{
-  let active=0,max=0;
+test('Spotify matching samples 12 of 30 candidates with at most three concurrent calls',async()=>{
+  let active=0,max=0,calls=0;
   const spotify={configured:true,profile:async()=>({name:'Taylor Swift'}),search:async name=>{
-    active++;max=Math.max(max,active);
+    calls++;active++;max=Math.max(max,active);
     await new Promise(resolve=>setTimeout(resolve,5));active--;
     return [{id:name,name}];
   }};
-  const related=createRecommendations({spotify,apiKey:'key',fetchImpl:async()=>response(Array.from({length:12},(_,i)=>({name:`Artist ${i}`,match:1-i/20})))});
-  assert.equal((await related('id','US')).artists.length,12);assert.equal(max,3);
+  const related=createRecommendations({spotify,apiKey:'key',fetchImpl:async()=>response(Array.from({length:30},(_,i)=>({name:`Artist ${i}`,match:1-i/40})))});
+  assert.equal((await related('id','US')).artists.length,12);assert.equal(max,3);assert.equal(calls,12);
 });
 
 test('Ripple Score ranks by similarity, shared tags and discovery, and explains the match', async () => {

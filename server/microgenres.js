@@ -131,16 +131,16 @@ export function createMicrogenres({ spotify, apiKey = '', fetchImpl = fetch }) {
   }
 
   // Artists Last.fm lists for a microgenre (top 20), matched to Spotify (up to 12).
-  function artistsForTag(tag, country) {
+  function artistsForTag(tag, country, limit = 12) {
     const sourceUrl = `https://www.last.fm/tag/${encodeURIComponent(tag)}/artists`;
     if (!apiKey || !spotify.configured) return Promise.resolve({ tag, artists: [], sourceUrl });
-    const key = `${tag}:${country}`;
+    const key = `${tag}:${country}:${limit}`;
     const promise = cached(artistCache, key, SIX_HOURS, async () => {
       try {
         const data = await lastfm({ method: 'tag.getTopArtists', tag, limit: '20' });
         const names = (Array.isArray(data.topartists?.artist) ? data.topartists.artist : [])
           .map(a => a?.name).filter(n => typeof n === 'string' && n.trim());
-        const matched = await matchUntil(names, 12, name => matchArtist({ name, score: 0 }, spotify, country));
+        const matched = await matchUntil(names, limit, name => matchArtist({ name, score: 0 }, spotify, country));
         return { tag, artists: matched.map(artist => ({ ...artist, tags: [tag] })), sourceUrl };
       } catch {
         return { tag, artists: [], sourceUrl };
