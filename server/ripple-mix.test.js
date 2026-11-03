@@ -80,3 +80,17 @@ test('artist-only Ripple saves supply familiar songs with an empty Spotify libra
   assert.equal(result.tracks.filter(t => t.newToYou).length, 1);
   assert.ok(!result.tracks.some(t => t.id === id(103)));
 });
+
+test('refresh excludes recent artists and songs while retaining smaller discoveries', async () => {
+  const track = (n, artistId) => ({ id: id(n), type: 'track', name: 'Song', artists: [{ id: id(artistId), name: 'Artist' }] });
+  const calls = [];
+  const result = await buildMix({
+    api: async path => { calls.push(path); return { tracks: { items: [track(201, 2), track(301, 3), track(302, 3)] } }; },
+    related: async () => ({ artists: [{ id: id(2), name: 'Recent', score: 0.9 }, { id: id(3), name: 'Fresh', score: 0.8, smallerAudience: true }] }),
+    library: [{ kind: 'artist', spotify_id: id(1), name: 'Seed' }], preferences: mixPreferences(), seed: 'refresh',
+    history: [{ artistIds: [id(1), id(2)], trackIds: [id(301)] }],
+  });
+  assert.deepEqual(result.tracks.map(t => t.id), [id(302)]);
+  assert.equal(result.tracks[0].smallerAudience, true);
+  assert.equal(calls.length, 1);
+});

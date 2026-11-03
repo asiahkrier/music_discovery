@@ -6,13 +6,18 @@ function artist(a) {
   return { id: a.id, spotifyId: a.id, name: a.name, tags: normalizeTags(a.genres || []), rawGenres: a.genres || [], image: a.images?.[0]?.url || '', imageSource: `https://open.spotify.com/artist/${a.id}`, url: `https://open.spotify.com/artist/${a.id}`, spotifyEmbed: `https://open.spotify.com/embed/artist/${a.id}?utm_source=generator`, source: 'Spotify' };
 }
 const fail = (message, status = 502) => Object.assign(new Error(message), { status });
-export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = fetch } = {}) {
+export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = fetch, now = Date.now } = {}) {
   let token, expires = 0, pending, blockedUntil = 0;
+  const responses = new Map();
+  function rateLimitError() {
+    const seconds = Math.max(1, Math.ceil((blockedUntil - now()) / 1000));
+    return Object.assign(fail(`Music catalog is temporarily busy. Try again in ${seconds} seconds.`, 429), { retryAfter: seconds });
+  }
   const configured = Boolean(spotifyId && spotifySecret);
   async function json(url, options = {}) {
-    if (Date.now() < blockedUntil) throw fail('Spotify is busy. Please try again in a minute.', 429);
+    if (now() < blockedUntil) throw rateLimitError();
     const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(10000) });
-    if (response.status === 429) { blockedUntil = Date.now() + Math.max(1, Number(response.headers?.get('retry-after')) || 60) * 1000; throw fail('Spotify is busy. Please try again later.', 429); }
+    if (response.status === 429) { blockedUntil = now() + Math.max(1, Number(response.headers?.get('retry-after')) || 60) * 1000; throw rateLimitError(); }
     if (!response.ok) throw fail(response.status === 403 ? 'Spotify denied access. Check your Spotify developer app access.' : 'Spotify could not load this request.', response.status === 404 ? 404 : 502);
     return response.json();
   }
@@ -26,7 +31,21 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     }).finally(() => { pending = null; });
     return pending;
   }
-  async function api(path, params = {}) { return json(`https://api.spotify.com/v1/${path}?${new URLSearchParams(params)}`, { headers: { Authorization: `Bearer ${await accessToken()}` } }); }
+  async function api(path, params = {}) {
+    const query = new URLSearchParams(params);
+    query.sort();
+    const url = `https://api.spotify.com/v1/${path}?${query}`;
+    const cached = responses.get(url);
+    if (cached && cached.until > now()) return cached.promise;
+    const promise = (async () => json(url, { headers: { Authorization: `Bearer ${await accessToken()}` } }))();
+    if (responses.size >= 500) responses.delete(responses.keys().next().value);
+    responses.set(url, { until: now() + 300000, promise });
+    try { return await promise; }
+    catch (error) {
+      if (responses.get(url)?.promise === promise) responses.delete(url);
+      throw error;
+    }
+  }
   async function profile(id) {
     if (configured) return artist(await api(`artists/${id}`));
     const artistUrl = `https://open.spotify.com/artist/${id}`;
