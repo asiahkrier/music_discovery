@@ -11,7 +11,7 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
   const responses = new Map();
   function rateLimitError() {
     const seconds = Math.max(1, Math.ceil((blockedUntil - now()) / 1000));
-    return Object.assign(fail(`Music catalog is temporarily busy. Try again in ${seconds} seconds.`, 429), { retryAfter: seconds });
+    return Object.assign(fail('Music discovery is temporarily unavailable while the catalog recovers. Please try again later.', 429), { retryAfter: seconds });
   }
   const configured = Boolean(spotifyId && spotifySecret);
   async function json(url, options = {}) {
@@ -55,19 +55,42 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
   }
   async function search(q, country, offset = 0) { const data = await api('search', { q, type: 'artist', market: country, limit: 10, offset }); return (data.artists?.items || []).filter(a => validId(a.id)).map(artist); }
   const cache = new Map();
+  const recentPools = new Map();
+  const genres = ['pop', 'hip-hop', 'r&b', 'k-pop', 'house', 'shoegaze', 'ambient', 'indie rock'];
+  async function discoveryGroups(country, offset = 0) {
+    if (offset >= genres.length) return [];
+    const batch = await Promise.allSettled(genres.slice(offset, offset + 2).map(genre => search(`genre:"${genre}"`, country, randomInt(5) * 10)));
+    const artists = batch.filter(result => result.status === 'fulfilled').flatMap(result => result.value);
+    const error = batch.find(result => result.status === 'rejected');
+    if (error) {
+      if (artists.length) return artists;
+      throw error.reason;
+    }
+    try { return artists.concat(await discoveryGroups(country, offset + 2)); }
+    catch (error) { if (artists.length) return artists; throw error; }
+  }
   async function discover(country) {
-    if (cache.has(country) && cache.get(country).until > Date.now()) return cache.get(country).promise;
+    const cached = cache.get(country);
+    if (cached && cached.until > now()) return cached.promise;
     const promise = (async () => {
-      const pool = new Map();
-      // Search different scenes and depths; do not label search rank as popularity.
-      const genres = ['pop', 'hip-hop', 'r&b', 'k-pop', 'house', 'shoegaze', 'ambient', 'indie rock'];
-      const groups = await Promise.all(genres.map(genre => search(`genre:"${genre}"`, country, randomInt(5) * 10)));
-      for (const a of groups.flat()) pool.set(a.id, a);
-      return [...pool.values()];
+      try {
+        const artists = [...new Map((await discoveryGroups(country)).map(a => [a.id, a])).values()];
+        if (artists.length) {
+          if (recentPools.size >= 20) recentPools.delete(recentPools.keys().next().value);
+          recentPools.set(country, { artists, until: now() + 86400000 });
+        }
+        return artists;
+      } catch (error) {
+        const recent = recentPools.get(country);
+        if (recent && recent.until > now()) return recent.artists;
+        recentPools.delete(country);
+        throw error;
+      }
     })();
     if (cache.size >= 20) cache.delete(cache.keys().next().value);
-    cache.set(country, { until: Date.now() + 300000, promise });
-    try { return await promise; } catch (e) { cache.delete(country); throw e; }
+    cache.set(country, { until: now() + 3600000, promise });
+    try { return await promise; }
+    catch (error) { cache.delete(country); throw error; }
   }
   async function songArtwork(id) {
     const track = await api(`tracks/${id}`);

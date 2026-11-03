@@ -1,5 +1,6 @@
 import ArtistPhoto from './ArtistPhoto.jsx';
 import React, { useEffect, useState } from 'react';
+import { readDiscovery, saveDiscovery } from './discovery-cache.js';
 import { nextArtists } from './discovery-shuffle.js';
 
 export function DiscoveryCard({ artist: a, index, onSelect }) {
@@ -22,12 +23,18 @@ export default function Discovery({ country, onSelect }) {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true); setPool([]); setShown([]); setError('');
+    const recent = readDiscovery(country);
+    setLoading(true); setPool(recent); setShown(nextArtists(recent)); setError('');
+    setNotice(recent.length ? 'Showing recently loaded artists while we check for updates.' : '');
     fetch(`/api/discover?${new URLSearchParams({country})}`, { signal: controller.signal }).then(async response => {
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not load discovery.');
-      if (!controller.signal.aborted) { setNotice(data.notice || ''); setPool(data.artists); setShown(nextArtists(data.artists)); }
-    }).catch(e => { if (e.name !== 'AbortError') setError(e.message || 'Discovery is unavailable right now.'); })
+      if (!response.ok) throw new Error(response.status === 429 ? 'Discovery updates are temporarily unavailable. Please try again later.' : data.error || 'Could not load discovery.');
+      if (!controller.signal.aborted) { saveDiscovery(country, data.artists); setNotice(data.notice || ''); setPool(data.artists); setShown(nextArtists(data.artists)); }
+    }).catch(e => {
+      if (controller.signal.aborted) return;
+      if (recent.length) setNotice('Discovery updates are temporarily unavailable. You can keep exploring these recently loaded artists.');
+      else setError(e.message || 'Discovery is unavailable right now.');
+    })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [country, retry]);
