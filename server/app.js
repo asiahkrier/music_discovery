@@ -44,7 +44,7 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
     const artist = await spotify.profile(id);
     return biography(artist.name);
   });
-  route('/api/discover', async (_, country) => ({ artists: await spotify.discover(country), country, notice: 'Shuffled Spotify genre searches, including different result pages. This is not a popularity ranking.' }));
+  route('/api/discover', async (_, country) => ({ artists: await spotify.discover(country), country, notice: 'Shuffled suggestions from recently loaded genre searches. This is not a popularity ranking.' }));
   route('/api/related-artists', async ({ id }, country) => {
     if (!validId(id)) throw Object.assign(new Error('Choose a Spotify artist.'), { status: 400 });
     return related(id, country);
