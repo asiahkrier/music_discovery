@@ -67,7 +67,7 @@ test('HTTP routes validate input and serve Spotify-only contracts without secret
  assert.ok(!JSON.stringify(profile).includes('secret'));
 });
 
-test('discovery overlaps independent searches and keeps offsets within five pages', async () => {
+test('discovery serializes catalog requests and keeps offsets within five pages', async () => {
  let active = 0, peak = 0;
  const { client } = fixture(async url => {
   const offset = Number(url.searchParams.get('offset'));
@@ -79,5 +79,5 @@ test('discovery overlaps independent searches and keeps offsets within five page
  });
  const artists = await client.discover('US');
  assert.equal(artists.length, 1);
- assert.ok(peak > 1);
+ assert.equal(peak, 1);
 });
