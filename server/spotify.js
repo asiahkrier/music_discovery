@@ -6,9 +6,18 @@ function artist(a) {
   return { id: a.id, spotifyId: a.id, name: a.name, tags: normalizeTags(a.genres || []), rawGenres: a.genres || [], image: a.images?.[0]?.url || '', imageSource: `https://open.spotify.com/artist/${a.id}`, url: `https://open.spotify.com/artist/${a.id}`, spotifyEmbed: `https://open.spotify.com/embed/artist/${a.id}?utm_source=generator`, source: 'Spotify' };
 }
 const fail = (message, status = 502) => Object.assign(new Error(message), { status });
-export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = fetch, now = Date.now } = {}) {
+export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = fetch, now = Date.now, store = null, requestGapMs = 250 } = {}) {
   let token, expires = 0, pending, blockedUntil = 0;
   const responses = new Map();
+  const retention = 86400000;
+  const cooldownKey = `spotify-cooldown:${spotifyId}`;
+  let queue = Promise.resolve();
+  const restored = store ? store.get(cooldownKey).then(value => { blockedUntil = Number(value) || 0; }) : Promise.resolve();
+  function scheduled(action) {
+    const job = queue.then(action);
+    queue = job.catch(() => {}).then(() => new Promise(resolve => setTimeout(resolve, requestGapMs)));
+    return job;
+  }
   function rateLimitError() {
     const seconds = Math.max(1, Math.ceil((blockedUntil - now()) / 1000));
     return Object.assign(fail('Music discovery is temporarily unavailable while the catalog recovers. Please try again later.', 429), { retryAfter: seconds });
@@ -17,7 +26,7 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
   async function json(url, options = {}) {
     if (now() < blockedUntil) throw rateLimitError();
     const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(10000) });
-    if (response.status === 429) { blockedUntil = now() + Math.max(1, Number(response.headers?.get('retry-after')) || 60) * 1000; throw rateLimitError(); }
+    if (response.status === 429) { blockedUntil = now() + Math.max(1, Number(response.headers?.get('retry-after')) || 60) * 1000; await store?.set(cooldownKey, blockedUntil, blockedUntil); throw rateLimitError(); }
     if (!response.ok) throw fail(response.status === 403 ? 'Spotify denied access. Check your Spotify developer app access.' : 'Spotify could not load this request.', response.status === 404 ? 404 : 502);
     return response.json();
   }
@@ -37,7 +46,23 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     const url = `https://api.spotify.com/v1/${path}?${query}`;
     const cached = responses.get(url);
     if (cached && cached.until > now()) return cached.promise;
-    const promise = (async () => json(url, { headers: { Authorization: `Bearer ${await accessToken()}` } }))();
+    const promise = (async () => {
+      await restored;
+      const saved = await store?.get(url);
+      if (saved && saved.freshUntil > now()) return saved.data;
+      try {
+        if (now() < blockedUntil) throw rateLimitError();
+        const data = await scheduled(async () => {
+          if (now() < blockedUntil) throw rateLimitError();
+          return json(url, { headers: { Authorization: `Bearer ${await accessToken()}` } });
+        });
+        await store?.set(url, { data, freshUntil: now() + 3600000 }, now() + retention);
+        return data;
+      } catch (error) {
+        if (saved && (error.status === 429 || error.status === 502 || error.name === 'TimeoutError')) return saved.data;
+        throw error;
+      }
+    })();
     if (responses.size >= 500) responses.delete(responses.keys().next().value);
     responses.set(url, { until: now() + 300000, promise });
     try { return await promise; }
@@ -73,14 +98,18 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     const cached = cache.get(country);
     if (cached && cached.until > now()) return cached.promise;
     const promise = (async () => {
+      const saved = await store?.get(`discovery:${country}`);
+      if (saved?.freshUntil > now()) return saved.artists;
       try {
         const artists = [...new Map((await discoveryGroups(country)).map(a => [a.id, a])).values()];
         if (artists.length) {
           if (recentPools.size >= 20) recentPools.delete(recentPools.keys().next().value);
           recentPools.set(country, { artists, until: now() + 86400000 });
+          await store?.set(`discovery:${country}`, { artists, freshUntil: now() + 3600000 }, now() + retention);
         }
         return artists;
       } catch (error) {
+        if (saved?.artists?.length) return saved.artists;
         const recent = recentPools.get(country);
         if (recent && recent.until > now()) return recent.artists;
         recentPools.delete(country);

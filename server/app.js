@@ -1,3 +1,4 @@
+import { createCatalogStore } from './catalog-store.js';
 import { libraryMixRouter } from './library-mix.js';
 import { signupAvailabilityRouter } from './signup-availability.js';
 import express from 'express';
@@ -12,7 +13,7 @@ import { createSpotify, validId } from './spotify.js';
 export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = '', accountOptions = {} } = {}) {
   const app = express();
   const biography = createLastfm({ apiKey: lastfmApiKey, fetchImpl });
-  const spotify = createSpotify({ ...songOptions, fetchImpl });
+  const spotify = createSpotify({ store: createCatalogStore(accountOptions), ...songOptions, fetchImpl });
   const related = createRecommendations({ spotify, apiKey: lastfmApiKey, fetchImpl });
   const topTracks = createTopTracks({ spotify, apiKey: lastfmApiKey, fetchImpl });
   const microgenres = createMicrogenres({ spotify, apiKey: lastfmApiKey, fetchImpl });
