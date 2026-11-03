@@ -67,10 +67,10 @@ function MixContent({ onProfile }) {
     {!status && !error && <output>Loading your mix…</output>}
     {!status && error && <button type="button" onClick={() => window.location.reload()}>Try again</button>}
     {status && <>
-      <section className="account-panel mix-controls"><h2>Shape your mix</h2><p>Based only on artists and songs you save in Ripple. No Spotify account connection needed.</p>
+      <section className="account-panel mix-controls"><h2>Shape your mix</h2><p>Based only on artists and songs you save in Ripple.</p>
         <label className="mix-slider">Discovery level <strong>{preferences.adventure}% adventurous</strong><input type="range" min="0" max="100" step="10" value={preferences.adventure} disabled={busy} onChange={e => setPreferences(p => ({ ...p, adventure: Number(e.target.value) }))}/><span>Familiar <span>Adventurous</span></span></label>
         <details className="mix-explanation"><summary>How your mix works</summary><p className="fine-print">Your mix balances artists from your Ripple saves with related discoveries of different audience sizes. More adventurous makes room for more discoveries; it does not mean smaller artists only. The balance depends on available matches. Audience comparisons use Last.fm listener data, not Spotify monthly listeners. Artist names are sent to Last.fm to find related music.</p>
-        <p className="fine-print">Ripple considers your 100 most recent saves, using up to 20 saved artists and 10 saved songs to choose starting artists. Your mix stays here between visits; refresh to include new saves.</p></details>
+        <p className="fine-print">Ripple considers your 100 most recent saves, using up to 20 saved artists and 10 saved songs to choose starting artists. Your mix stays here between visits. Refresh rotates your starting artists and excludes songs and artists from your last three mixes. If fresh matches are limited, you may get a shorter mix.</p></details>
         <div className="settings-actions"><button type="button" disabled={busy} onClick={() => void run(() => generate(Boolean(mix)))}>{buildLabel}</button></div>
 
       </section>

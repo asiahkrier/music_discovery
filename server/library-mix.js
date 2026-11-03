@@ -41,7 +41,7 @@ export function libraryMixRouter({ url, secret, clientFactory = createClient, ap
   route('put', '/preferences', async (req, user) => {
     const row = await read(user);
     const preferences = libraryMixPreferences({ adventure: req.body?.adventure, dismissed: row.preferences?.dismissed });
-    await save(user, { preferences, mix: preferences.adventure === libraryMixPreferences(row.preferences).adventure ? row.mix || null : null });
+    await save(user, { preferences, mix: row.mix || null });
     return { preferences };
   });
   route('post', '/dismiss', async (req, user) => {
@@ -53,13 +53,15 @@ export function libraryMixRouter({ url, secret, clientFactory = createClient, ap
   });
   route('post', '/mix', async (req, user) => {
     const row = await read(user), now = Date.now(), week = mixWeek(now);
-    if (row.mix?.week === week && !req.body?.refresh) return { mix: row.mix };
+    if (row.mix?.week === week && row.mix?.adventure === libraryMixPreferences(row.preferences).adventure && !req.body?.refresh) return { mix: row.mix };
     if (!claimRebuild(cooldowns, user, now)) throw fail('Please wait one minute before rebuilding your mix.', 429);
     const library = checked(await admin.from('library_items').select('*').eq('user_id', user).order('created_at', { ascending: false }).limit(100)) || [];
     const preferences = libraryMixPreferences(row.preferences);
     const seed = mixSeed(req.body?.refresh, user, week);
-    const result = library.length ? await builder({ api, related, library, preferences, seed }) : { tracks: [], warnings: ['Save artists or songs in Ripple to start your mix.'], generatedAt: new Date().toISOString(), seedCount: 0 };
-    const mix = { ...result, week };
+    const history = row.mix ? [{ trackIds: row.mix.tracks.map(t => t.id), artistIds: [...new Set(row.mix.tracks.map(t => t.artistId).filter(Boolean))] }, ...(row.mix.history || [])].slice(0, 3) : [];
+    const result = library.length ? await builder({ api, related, library, preferences, seed, history }) : { tracks: [], warnings: ['Save artists or songs in Ripple to start your mix.'], generatedAt: new Date().toISOString(), seedCount: 0 };
+    if (history.length && library.length && !result.tracks.length) throw fail('No fresh matches are available right now. Your previous mix is kept. Save more artists or try again later.', 422);
+    const mix = { ...result, week, adventure: preferences.adventure, history };
     await save(user, { preferences, mix }); return { mix };
   });
   return router;

@@ -51,3 +51,24 @@ test('builder ignores all Spotify personal sources even if old preferences enabl
   assert.equal(calls, 0);
   assert.deepEqual(result.tracks, []);
 });
+
+test('refresh passes bounded history and preference changes preserve it', async t => {
+  let received;
+  const { db, request } = await fixture(t, async args => { received = args.history; return { tracks: [{ id: 'b'.repeat(22), artistId: 'c'.repeat(22) }], warnings: [] }; });
+  db.tables.library_items.push({ user_id: 'alice', kind: 'artist', name: 'Seed' });
+  db.tables.ripple_mixes.push({ user_id: 'alice', mix: { tracks: [{ id: 'a'.repeat(22), artistId: 'd'.repeat(22) }], history: [{ trackIds: ['older'], artistIds: [] }, { trackIds: ['oldest'], artistIds: [] }, { trackIds: ['expired'], artistIds: [] }] } });
+  await request('preferences', 'PUT', { adventure: 80 });
+  const response = await request('mix', 'POST', { refresh: true });
+  assert.equal(response.status, 200);
+  assert.equal(received.length, 3);
+  assert.deepEqual(received[0], { trackIds: ['a'.repeat(22)], artistIds: ['d'.repeat(22)] });
+  assert.equal((await response.json()).mix.history.length, 3);
+});
+test('no fresh candidates preserves the previous mix instead of repeating it', async t => {
+  const { db, request } = await fixture(t, async () => ({ tracks: [], warnings: [] }));
+  db.tables.library_items.push({ user_id: 'alice', kind: 'artist', name: 'Seed' });
+  const previous = { tracks: [{ id: 'a'.repeat(22), artistId: 'b'.repeat(22) }] };
+  db.tables.ripple_mixes.push({ user_id: 'alice', mix: previous });
+  assert.equal((await request('mix', 'POST', { refresh: true })).status, 422);
+  assert.deepEqual((await (await request('status')).json()).mix, previous);
+});

@@ -60,8 +60,13 @@ export function asMixTrack(track, reason, relevance = 0.7) {
   return { id: track.id, name: track.name, artistId: track.artists[0].id, artist: track.artists.map(a => a.name).join(', '), image: track.album?.images?.[0]?.url || '', reason, relevance };
 }
 
+function rotationOrder(items, seed, identify = item => item.id) {
+  const value = item => createHash('sha256').update(`${seed}:${identify(item)}`).digest().readUInt32BE(0);
+  return [...items].sort((a, b) => value(a) - value(b));
+}
+
 function balancedArtists(items, limit, getArtist = item => item) {
-  const ranked = [...items].sort((a, b) => getArtist(b).score - getArtist(a).score);
+  const ranked = [...items];
   const other = ranked.filter(item => !getArtist(item).smallerAudience);
   const smaller = ranked.filter(item => getArtist(item).smallerAudience);
   const chosen = [...other.slice(0, Math.ceil(limit / 2)), ...smaller.slice(0, Math.floor(limit / 2))];
@@ -69,8 +74,10 @@ function balancedArtists(items, limit, getArtist = item => item) {
   return [...chosen, ...ranked.filter(item => !selected.has(item))].slice(0, limit);
 }
 
-export async function buildMix({ api, related, library, preferences, seed }) {
+export async function buildMix({ api, related, library, preferences, seed, history = [] }) {
   const warnings = [], familiar = [], seeds = new Map();
+  const recentTracks = new Set(history.flatMap(mix => mix.trackIds || []));
+  const recentArtists = new Set(history.flatMap(mix => mix.artistIds || []));
   function addArtist(artist, weight, source) {
     if (!/^[A-Za-z0-9]{22}$/.test(artist?.id || '')) return;
     const prior = seeds.get(artist.id);
@@ -79,7 +86,7 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   function addTrack(track, weight, reason) {
     const normalized = asMixTrack(track, reason);
     if (!normalized) return;
-    familiar.push(normalized);
+    if (!recentTracks.has(normalized.id) && !recentArtists.has(normalized.artistId)) familiar.push(normalized);
     track.artists.forEach(a => addArtist(a, weight, reason));
   }
   async function source(path, label, consume) {
@@ -89,20 +96,22 @@ export async function buildMix({ api, related, library, preferences, seed }) {
     }
   }
   async function songsForArtist(artist, reason, relevance, output, extra = {}) {
+    if (recentArtists.has(artist.id)) return;
     const query = new URLSearchParams({ q: `artist:"${artist.name.replaceAll('"', '')}"`, type: 'track', limit: '10' });
     await source(`search?${query}`, `Songs by ${artist.name}`, data => {
       const matches = (data.tracks?.items || []).filter(t => t.artists?.some(a => a.id === artist.id));
-      const playable = matches.map(t => asMixTrack(t, reason, relevance)).filter(Boolean).slice(0, 2);
+      const eligible = matches.map(t => asMixTrack(t, reason, relevance)).filter(t => t && !recentTracks.has(t.id));
+      const playable = rotationOrder(eligible, seed).slice(0, 2);
       for (const item of playable) output.push({ ...item, artistId: artist.id, ...extra });
     });
   }
   const rippleArtists = library.filter(i => i.kind === 'artist');
   rippleArtists.slice(0, 20).forEach(i => addArtist({ id: i.spotify_id, name: i.name }, 5, `Saved on Ripple: ${i.name}`));
   // Resolve at most ten saved songs before choosing artist seeds.
-  await Promise.all(library.filter(i => i.kind === 'song').slice(0, 10).map(i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple'))));
+  await inPairs(library.filter(i => i.kind === 'song').slice(0, 10), i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple')));
   const allSeeds = [...seeds.values()].sort((a, b) => b.weight - a.weight);
   // Choose the strongest preferences from Ripple saves only.
-  const chosen = allSeeds.slice(0, 8);
+  const chosen = rotationOrder(allSeeds, seed).slice(0, 8);
   // Artist-only Ripple libraries also need songs from the artists the user saved.
   const knownSongs = [];
   await inPairs(chosen, artist => songsForArtist(
@@ -111,7 +120,7 @@ export async function buildMix({ api, related, library, preferences, seed }) {
   const candidates = [];
   const results = await inPairs(chosen, async artist => ({ artist, response: await related(artist.id, 'US') }));
   for (const { artist, response } of results) {
-    for (const candidate of balancedArtists(response.artists, 5)) {
+    for (const candidate of balancedArtists(rotationOrder(response.artists.filter(a => !recentArtists.has(a.id)), seed), 5)) {
       candidates.push({ candidate, basedOn: artist.name, sourceUrl: response.sourceUrl });
     }
   }
@@ -124,6 +133,7 @@ export async function buildMix({ api, related, library, preferences, seed }) {
     { smallerAudience: candidate.smallerAudience === true, sourceUrl },
   ));
   if (!candidates.length) warnings.push('No matched discoveries were available. This mix uses your selected favorites; try refreshing later.');
+  if (history.length) warnings.push('Songs and artists from your last three mixes are excluded. A smaller mix means fewer fresh matches were available.');
   const tracks = rankMix([...familiar, ...knownSongs, ...discovered], { knownTracks: familiar.map(t => t.id), knownArtists: [...seeds.keys()], ...preferences, seed });
   return { tracks, warnings: [...new Set(warnings)], generatedAt: new Date().toISOString(), seedCount: chosen.length };
 }
