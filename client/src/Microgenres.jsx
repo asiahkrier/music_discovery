@@ -59,11 +59,11 @@ export default function Microgenres({ country = 'US' }) {
     <div className="intro"><div><p className="eyebrow">GO DEEPER THAN GENRE</p><h1>Discover microgenres<span>.</span></h1><p>{intro}</p></div><span className="mode">{personal ? 'Based on your saves' : 'Starter picks'}</span></div>
     {!genres && !genresError && <output className="status">Finding microgenres…</output>}
     {genresError && <output className="notice">{genresError} <button className="back-results" onClick={() => setRetry(n => n + 1)}>Try again</button></output>}
-    {genres && <div className="microgenre-chips" role="group" aria-label="Microgenres">
+    {genres && <fieldset className="microgenre-chips" aria-label="Microgenres">
       {genres.microgenres.map(g => <button type="button" key={g.tag} aria-pressed={selected === g.tag} onClick={() => setSelected(g.tag)}>
         {g.tag}{personal && <small>{g.count} of your artists</small>}
       </button>)}
-    </div>}
+    </fieldset>}
     {selected && <>
       <div className="section-title"><div><h2>Artists in {selected}</h2></div></div>
       {personal && current?.artists.length > 0 && <p className="fine-print microgenre-reason">Because you saved {current.artists.join(', ')}.</p>}

@@ -63,10 +63,10 @@ async function mapLimit(items, limit, task) {
   const results = new Array(items.length);
   let next = 0;
   async function run() {
-    while (next < items.length) {
-      const index = next++;
-      results[index] = await task(items[index], index);
-    }
+    if (next >= items.length) return;
+    const index = next++;
+    results[index] = await task(items[index], index);
+    return run();
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
   return results;
