@@ -80,3 +80,15 @@ test('microgenre artists are empty, not errors, when providers are unavailable',
   const failing = createMicrogenres({ spotify: { configured: true }, apiKey: 'key', fetchImpl: async () => ({ ok: false }) });
   assert.deepEqual((await failing.artistsForTag('digicore', 'US')).artists, []);
 });
+
+test('microgenre artist lookups stop searching Spotify once 12 artists are found', async () => {
+  let searches = 0;
+  const spotify = { configured: true, search: async name => { searches++; return [{ id: `id-${name}`, name, tags: [] }]; } };
+  const genres = createMicrogenres({ spotify, apiKey: 'key', fetchImpl: async () => json({
+    topartists: { artist: Array.from({ length: 20 }, (_, n) => ({ name: `Artist ${n}` })) },
+  }) });
+  const result = await genres.artistsForTag('shoegaze', 'US');
+  assert.equal(result.artists.length, 12);
+  assert.deepEqual(result.artists.map(a => a.name), Array.from({ length: 12 }, (_, n) => `Artist ${n}`));
+  assert.equal(searches, 12);
+});

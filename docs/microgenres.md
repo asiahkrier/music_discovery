@@ -14,7 +14,7 @@ If you are logged out, have no saved artists, or Last.fm returns nothing usable,
 
 ## Artists in a microgenre
 
-Selecting a microgenre calls `GET /api/microgenre-artists?tag=…&country=…`. Ripple gets Last.fm's top 20 artists for that tag (`tag.getTopArtists`) and matches each to Spotify with the same exact-name matching as the Ripple Score. Up to 12 matched artists are shown. Clicking one opens its full Ripple artist page.
+Selecting a microgenre calls `GET /api/microgenre-artists?tag=…&country=…`. Ripple gets Last.fm's top 20 artists for that tag (`tag.getTopArtists`) and matches them to Spotify in order, three at a time, with the same exact-name matching as the Ripple Score. It stops as soon as 12 artists are found, so it doesn't make extra Spotify searches that could hit Spotify's rate limit. Clicking one opens its full Ripple artist page.
 
 ## Limits and caching
 

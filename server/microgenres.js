@@ -72,6 +72,19 @@ async function mapLimit(items, limit, task) {
   return results;
 }
 
+// Matches names three at a time, in order, and stops once `max` different artists are found.
+// This avoids extra Spotify searches (and Spotify's rate limit) once the page has enough artists.
+async function matchUntil(names, max, match) {
+  const found = new Map();
+  for (let start = 0; start < names.length && found.size < max; start += 3) {
+    const batch = await Promise.all(names.slice(start, start + 3).map(match));
+    for (const artist of batch) {
+      if (artist && !found.has(artist.id) && found.size < max) found.set(artist.id, artist);
+    }
+  }
+  return [...found.values()];
+}
+
 function cached(cache, key, ttl, load) {
   const entry = cache.get(key);
   if (entry && entry.until > Date.now()) return entry.promise;
@@ -127,12 +140,8 @@ export function createMicrogenres({ spotify, apiKey = '', fetchImpl = fetch }) {
         const data = await lastfm({ method: 'tag.getTopArtists', tag, limit: '20' });
         const names = (Array.isArray(data.topartists?.artist) ? data.topartists.artist : [])
           .map(a => a?.name).filter(n => typeof n === 'string' && n.trim());
-        const matched = await mapLimit(names, 3, name => matchArtist({ name, score: 0 }, spotify, country));
-        const unique = new Map();
-        for (const artist of matched) {
-          if (artist && !unique.has(artist.id)) unique.set(artist.id, { ...artist, tags: [tag] });
-        }
-        return { tag, artists: [...unique.values()].slice(0, 12), sourceUrl };
+        const matched = await matchUntil(names, 12, name => matchArtist({ name, score: 0 }, spotify, country));
+        return { tag, artists: matched.map(artist => ({ ...artist, tags: [tag] })), sourceUrl };
       } catch {
         return { tag, artists: [], sourceUrl };
       }
