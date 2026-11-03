@@ -76,12 +76,15 @@ async function mapLimit(items, limit, task) {
 // This avoids extra Spotify searches (and Spotify's rate limit) once the page has enough artists.
 async function matchUntil(names, max, match) {
   const found = new Map();
-  for (let start = 0; start < names.length && found.size < max; start += 3) {
+  async function nextBatch(start) {
+    if (start >= names.length || found.size >= max) return;
     const batch = await Promise.all(names.slice(start, start + 3).map(match));
     for (const artist of batch) {
       if (artist && !found.has(artist.id) && found.size < max) found.set(artist.id, artist);
     }
+    return nextBatch(start + 3);
   }
+  await nextBatch(0);
   return [...found.values()];
 }
 

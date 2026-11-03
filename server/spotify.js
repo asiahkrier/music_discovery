@@ -92,7 +92,12 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
       throw error.reason;
     }
     try { return artists.concat(await discoveryGroups(country, offset + 2)); }
-    catch (error) { if (artists.length) return artists; throw error; }
+    catch (error) {
+      if (artists.length) {
+        return artists;
+      }
+      throw error;
+    }
   }
   async function discover(country) {
     const cached = cache.get(country);
