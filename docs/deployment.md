@@ -30,7 +30,7 @@ Replace placeholders privately. Do not prefix these values with `VITE_` or put t
 
 | Symptom | Check |
 |---|---|
-| Connect Spotify message | Both variables must be present in the running backend environment. Restart locally or redeploy on Render. |
+| Music catalog unavailable message | Both variables must be present in the running backend environment. Restart locally or redeploy on Render. |
 | Spotify authentication/access error | Correct app credentials, owner subscription, app eligibility, and current Spotify developer restrictions. Do not share the secret in a screenshot. |
 | Artist link works but names do not | Public oEmbed can work without Web API credentials; it does not enable catalog search. |
 | No similar artists | Check LASTFM_API_KEY and provider access. Related names must match verified Spotify identities; unavailable matches can leave the section empty. |

@@ -17,7 +17,7 @@ export function createSpotify({ spotifyId = '', spotifySecret = '', fetchImpl = 
     return response.json();
   }
   async function accessToken() {
-    if (!configured) throw fail('Connect Spotify to enable catalog search and discovery. Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET to the local .env file, then restart Ripple.', 503);
+    if (!configured) throw fail('Music catalog access is temporarily unavailable. Please try again later.', 503);
     if (token && Date.now() < expires) return token;
     const encodedCredentials = Buffer.from(spotifyId + ':' + spotifySecret).toString('base64');
     if (!pending) pending = json('https://accounts.spotify.com/api/token', { method: 'POST', headers: { Authorization: `Basic ${encodedCredentials}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=client_credentials' }).then(data => {

@@ -19,4 +19,4 @@ Automated tests do not prove Spotify app eligibility, live catalog coverage, the
 The existing Trivy workflow reports dependencies but uses `exit-code: '0'`, so review counts in the artifact; a green job does not mean zero vulnerabilities. Prior sprint reports describe their own scanned commits and are not evidence for this update. SonarQube and Trivy results for this PR must be checked after CI runs.
 
 
-Account tests cover validation, owner isolation, availability checks and settings. Mix tests cover Ripple-only inputs, persistence, ranking, balance and dismissals. Spotify tests cover optional linking and saves, restricted permissions and retired endpoint rejection. Live Supabase confirmation, playback and Spotify consent/save checks require authorized accounts; mocked tests do not verify them.
+Account tests cover validation, owner isolation, availability checks and settings. Mix tests cover Ripple-only inputs, persistence, ranking, balance and dismissals. Retired Spotify-account endpoints are checked for rejection. Live Supabase confirmation and playback checks require suitable accounts; mocked tests do not verify them.

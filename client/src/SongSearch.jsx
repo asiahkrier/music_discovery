@@ -1,28 +1,16 @@
 import SearchSuggestions from './SearchSuggestions.jsx';
 import React, { useEffect, useRef, useState } from 'react';
-import { SpotifySaveButton } from './SpotifyConnection.jsx';
 import { SaveButton } from './AccountContext.jsx';
 
 export default function SongSearch() {
   const [query, setQuery] = useState('');
   const [previewId, setPreviewId] = useState(null);
-  const [provider, setProvider] = useState('spotify');
   const [country, setCountry] = useState('US');
-  const [providers, setProviders] = useState([]);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const request = useRef(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/song-providers', { signal: controller.signal }).then(r => {
-      if (!r.ok) throw new Error('Could not load Spotify connection status.');
-      return r.json();
-    }).then(data => setProviders(data.providers)).catch(e => {
-      if (e.name !== 'AbortError') setError('Could not load connected services. You can still try a search.');
-    });
-    return () => { controller.abort(); request.current?.abort(); };
-  }, []);
+  useEffect(() => () => request.current?.abort(), []);
   async function search(event) {
     event.preventDefault();
     request.current?.abort();
@@ -31,7 +19,7 @@ export default function SongSearch() {
     setPreviewId(null);
     setResult(null); setError(''); setBusy(true);
     try {
-      const response = await fetch(`/api/songs?${new URLSearchParams({ q: query.trim(), provider, country })}`, { signal: controller.signal });
+      const response = await fetch(`/api/songs?${new URLSearchParams({ q: query.trim(), country })}`, { signal: controller.signal });
       const data = await response.json();
       if (request.current !== controller) return;
       if (!response.ok) throw new Error(data.error || 'Song search is unavailable.');
@@ -46,12 +34,11 @@ export default function SongSearch() {
     <p className="fine-print">Search by song title, artist, or both. Results depend on Spotify availability in the selected country.</p>
     <form onSubmit={search}>
       <div className="song-options">
-        <label>Music service<select value={provider} onChange={e => setProvider(e.target.value)}>{providers.map(p => <option key={p.id} value={p.id} disabled={!p.enabled}>{p.name}{!p.enabled && ' — not connected'}</option>)}</select></label>
         <label>Country code<input aria-label="Country code" value={country} onChange={e => setCountry(e.target.value.toUpperCase())} maxLength={2} minLength={2} pattern="[A-Za-z]{2}" required placeholder="US"/></label>
       </div>
       <SearchSuggestions kind="song" query={query} setQuery={setQuery} country={country} onSelect={song => { request.current?.abort(); setBusy(false); setError(''); setResult({ songs: [song], country, providers: [] }); setPreviewId(song.id); }} label="Search songs" placeholder="Song name…" maxLength={100}/>
     </form>
-    <p className="fine-print">Connected: {providers.filter(p => p.enabled).map(p => p.name).join(', ') || 'checking…'}. Select Preview to listen here. Playback availability depends on Spotify.</p>
+    <p className="fine-print">Select Preview to listen here. Playback availability depends on Spotify.</p>
     <div aria-live="polite" aria-busy={busy}>
       {busy && <p className="status">Searching music catalogs…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
@@ -64,7 +51,7 @@ export default function SongSearch() {
             {previewId === song.id ? 'Close preview' : 'Preview song'}
           </button>
           {previewId === song.id && <iframe title={`${song.title} Spotify preview`} src={`https://open.spotify.com/embed/track/${encodeURIComponent(song.id)}`} width="100%" height="152" style={{ border: 0, borderRadius: 12 }} allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"/>}
-          <SpotifySaveButton id={song.id}/><SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: song.image || '' }}/>
+          <SaveButton item={{ kind: 'song', spotify_id: song.id, name: song.title, subtitle: song.artist, image: song.image || '' }}/>
         </article>)}</div>
       </>}
     </div>

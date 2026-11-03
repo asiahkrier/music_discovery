@@ -13,7 +13,6 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 | `lastfm.js`, `recommendations.js`, `top-tracks.js` | Biographies, identity-matched related artists and all-time songs. |
 | `signup-availability.js`, `account-settings.js` | Availability checks and verified account deletion. |
 | `library-mix.js`, `ripple-mix.js`, `mix-shared.js` | Authenticated Ripple-only mix storage, candidate ranking, bounded requests, weekly caching and dismissals. |
-| `spotify-account.js`, `spotify-vault.js` | Optional Spotify OAuth and direct song saves with encrypted credentials. |
 | `fake-supabase.js`, `*.test.js` | Test-only database helper and regression suites. |
 
 ## Frontend files
@@ -30,7 +29,6 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 | `useSignupAvailability.js`, `email-validation.js` | Live availability feedback and shared email validation. |
 | `SignupArtwork.jsx` | Rotating artist photos, reduced-motion handling and pause controls. |
 | `AccountSettings.jsx` | Email/password changes and account deletion. |
-| `SpotifyConnection.jsx`, `spotify-account-client.js` | Optional connection and direct Spotify saves. |
 | `RippleMix.jsx`, `mix-client.js` | Ripple-library mix controls, previews and dismissals. |
 | `styles.css`, `account.css` | Shared dark/lime styling and responsive layouts. |
 
@@ -40,4 +38,4 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 
 Keep numbered Supabase migrations: later migrations may depend on earlier tables/functions even when an old feature has been retired. Existing database columns are not dropped by code cleanup. Sprint reports and the demonstration video are coursework history, not unused application code.
 
-Use `npm test` and `npm run build` before review. See [API](api.md), [account setup](ACCOUNT-SETUP.md) and [Spotify/mix setup](spotify-personalization.md).
+Use `npm test` and `npm run build` before review. See [API](api.md), [account setup](ACCOUNT-SETUP.md) and [Ripple Mix setup](spotify-personalization.md).
