@@ -92,3 +92,11 @@ test('microgenre artist lookups stop searching Spotify once 12 artists are found
   assert.deepEqual(result.artists.map(a => a.name), Array.from({ length: 12 }, (_, n) => `Artist ${n}`));
   assert.equal(searches, 12);
 });
+
+test('microgenre initial batch matches only six artists', async () => {
+  let calls = 0;
+  const spotify = { configured: true, search: async name => { calls++; return [{ id: name, name }]; } };
+  const genres = createMicrogenres({ spotify, apiKey: 'key', fetchImpl: async () => json({ topartists: { artist: Array.from({ length: 20 }, (_, n) => ({ name: `Artist ${n}` })) } }) });
+  assert.equal((await genres.artistsForTag('shoegaze', 'US', 6)).artists.length, 6);
+  assert.equal(calls, 6);
+});

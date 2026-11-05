@@ -17,6 +17,7 @@ export default function Microgenres({ country = 'US' }) {
   const [genres, setGenres] = useState(null);
   const [genresError, setGenresError] = useState('');
   const [selected, setSelected] = useState('');
+  const [expanded, setExpanded] = useState('');
   const [artists, setArtists] = useState(null);
   const [artistsError, setArtistsError] = useState('');
   const [retry, setRetry] = useState(0);
@@ -42,12 +43,12 @@ export default function Microgenres({ country = 'US' }) {
     if (!selected) return undefined;
     const controller = new AbortController();
     setArtists(null); setArtistsError('');
-    fetch(`/api/microgenre-artists?${new URLSearchParams({ tag: selected, country })}`, { signal: controller.signal })
+    fetch(`/api/microgenre-artists?${new URLSearchParams({ tag: selected, country, limit: expanded === selected ? '12' : '6' })}`, { signal: controller.signal })
       .then(response => readJson(response, 'Artists for this microgenre are unavailable right now.'))
       .then(setArtists)
       .catch(e => { if (e.name !== 'AbortError') setArtistsError(e.message); });
     return () => controller.abort();
-  }, [selected, country, retry]);
+  }, [selected, country, retry, expanded]);
 
   const personal = genres?.basis === 'saved';
   const current = genres?.microgenres.find(g => g.tag === selected);
@@ -72,6 +73,7 @@ export default function Microgenres({ country = 'US' }) {
       {artists && <>
         {!artists.artists.length && <p className="fine-print">No {selected} artists could be matched to Spotify right now. Try another microgenre.</p>}
         <div className="discovery-cards">{artists.artists.map((a, index) => <DiscoveryCard key={a.id} artist={a} index={index} onSelect={openArtist}/>)}</div>
+        {artists.artists.length >= 6 && expanded !== selected && <button type="button" className="back-results" onClick={() => setExpanded(selected)}>Show more artists</button>}
         <p className="fine-print"><a className="photo-credit" href={artists.sourceUrl} target="_blank" rel="noreferrer">Source: Last.fm top {selected} artists ↗</a></p>
       </>}
     </>}

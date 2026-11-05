@@ -107,11 +107,11 @@ export async function buildMix({ api, related, library, preferences, seed, histo
   }
   const rippleArtists = library.filter(i => i.kind === 'artist');
   rippleArtists.slice(0, 20).forEach(i => addArtist({ id: i.spotify_id, name: i.name }, 5, `Saved on Ripple: ${i.name}`));
-  // Resolve at most ten saved songs before choosing artist seeds.
-  await inPairs(library.filter(i => i.kind === 'song').slice(0, 10), i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple')));
+  // Resolve at most five saved songs before choosing artist seeds.
+  await inPairs(rotationOrder(library.filter(i => i.kind === 'song'), seed, item => item.spotify_id).slice(0, 5), i => source(`tracks/${i.spotify_id}`, 'A Ripple saved song', t => addTrack(t, 4, 'Saved on Ripple')));
   const allSeeds = [...seeds.values()].sort((a, b) => b.weight - a.weight);
   // Choose the strongest preferences from Ripple saves only.
-  const chosen = rotationOrder(allSeeds, seed).slice(0, 8);
+  const chosen = rotationOrder(allSeeds, seed).slice(0, 4);
   // Artist-only Ripple libraries also need songs from the artists the user saved.
   const knownSongs = [];
   await inPairs(chosen, artist => songsForArtist(
@@ -125,7 +125,7 @@ export async function buildMix({ api, related, library, preferences, seed, histo
     }
   }
   const discovery = balancedArtists(
-    [...new Map(candidates.map(c => [c.candidate.id, c])).values()], 14, item => item.candidate,
+    [...new Map(candidates.map(c => [c.candidate.id, c])).values()], 8, item => item.candidate,
   );
   const discovered = [];
   await inPairs(discovery, ({ candidate, basedOn, sourceUrl }) => songsForArtist(

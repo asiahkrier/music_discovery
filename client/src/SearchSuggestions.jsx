@@ -1,3 +1,4 @@
+import { suggestionKey, readSuggestions, saveSuggestions } from './suggestion-cache.js';
 import React, { useEffect, useId, useRef, useState } from 'react';
 
 export default function SearchSuggestions({ kind, query, setQuery, country, onSelect, label, placeholder, maxLength }) {
@@ -6,10 +7,12 @@ export default function SearchSuggestions({ kind, query, setQuery, country, onSe
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState(null);
   const [active, setActive] = useState(-1);
-  const key = `${kind}:${country}:${query.trim()}`;
+  const key = suggestionKey(kind, country, query);
   useEffect(() => {
     setResult(null); setActive(-1);
     if (!open || query.trim().length < 2) return undefined;
+    const saved = readSuggestions(key);
+    if (saved) { setResult({ key, items: saved }); return undefined; }
     const controller = new AbortController();
     let current = true;
     const timer = setTimeout(() => {
@@ -20,11 +23,13 @@ export default function SearchSuggestions({ kind, query, setQuery, country, onSe
           if (!response.ok) throw new Error('Suggestions unavailable. You can still use the search button.');
           return data;
         }).then(data => {
-          if (current) setResult({ key, items: (data.artists || data.songs || []).slice(0, 6) });
+          const items = (data.artists || data.songs || []).slice(0, 6);
+          saveSuggestions(key, items);
+          if (current) setResult({ key, items });
         }).catch(error => {
           if (current && error.name !== 'AbortError') setResult({ key, items: [], error: error.message });
         });
-    }, 400);
+    }, 650);
     return () => { current = false; clearTimeout(timer); controller.abort(); };
   }, [key, open, kind, country, query]);
   const visible = open && query.trim().length >= 2;

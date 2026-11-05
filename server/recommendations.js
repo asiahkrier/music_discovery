@@ -52,6 +52,10 @@ function rankedArtists(data, name) {
 // Also used by microgenre discovery to turn Last.fm names into Spotify artists.
 export async function matchArtist(candidate, spotify, country) {
   try {
+    if (spotify.resolveArtist) {
+      const matched = await spotify.resolveArtist(candidate.name, country);
+      return matched ? { ...matched, score: candidate.score } : null;
+    }
     const results = await spotify.search(candidate.name, country);
        const exact = results.filter(a => normalize(a.name) === normalize(candidate.name));
     // Same-name accounts: use Spotify's top-ranked exact match, preferring one with a photo.
@@ -86,7 +90,9 @@ export function createRecommendations({ spotify, apiKey = '', fetchImpl = fetch 
       if (!response.ok) {
         return empty();
       }
-      const candidates = rankedArtists(await response.json(), current.name);
+      // Sample across the similarity list rather than restricting discovery to its top names.
+      const ranked = rankedArtists(await response.json(), current.name);
+      const candidates = ranked.length <= 12 ? ranked : Array.from({ length: 12 }, (_, index) => ranked[Math.floor(index * ranked.length / 12)]);
       const currentInfo = await artistInfo(current.name);
       // At most three candidates at once: find each on Spotify, then score it with Last.fm tags and listeners.
       const results = new Array(candidates.length);

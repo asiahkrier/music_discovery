@@ -61,9 +61,10 @@ export function createApp({ fetchImpl = fetch, songOptions = {}, lastfmApiKey = 
     }
     try { res.json(await microgenres.forArtists(artists)); } catch { res.status(502).json({ error: 'Microgenres are temporarily unavailable. Please try again.' }); }
   });
-  route('/api/microgenre-artists', async ({ tag }, country) => {
+  route('/api/microgenre-artists', async ({ tag, limit = '6' }, country) => {
     if (typeof tag !== 'string' || tag.length > 40 || !cleanTag(tag) || cleanTag(tag) !== tag) throw Object.assign(new Error('Choose a microgenre.'), { status: 400 });
-    return microgenres.artistsForTag(tag, country);
+    if (!['6', '12'].includes(limit)) throw Object.assign(new Error('Choose six or twelve artists.'), { status: 400 });
+    return microgenres.artistsForTag(tag, country, Number(limit));
   });
   route('/api/songs', async ({ q }, country) => {
     if (!q) throw Object.assign(new Error('Enter a song or artist.'), { status: 400 });
