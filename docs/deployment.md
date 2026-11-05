@@ -2,7 +2,7 @@
 
 ## Credentials
 
-Create a developer app in the [Spotify dashboard](https://developer.spotify.com/dashboard). Its Client ID and Client Secret are used on the server. Development-mode requirements and available endpoints/fields depend on Spotify's current access rules; consult the [migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide). App owners currently need Premium. Getting credentials does not guarantee biographies, genres, or Spotify's Fans also like list.
+Create a developer app in the [Spotify dashboard](https://developer.spotify.com/dashboard). Its Client ID and Client Secret are used on the server. Development-mode requirements and available endpoints/fields depend on Spotify's current access rules; consult the [migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide). Getting credentials does not guarantee biographies, genres, or Spotify's Fans also like list.
 
 For local use, copy `.env.example` to `.env` beside `package.json`:
 
@@ -30,7 +30,7 @@ Replace placeholders privately. Do not prefix these values with `VITE_` or put t
 
 | Symptom | Check |
 |---|---|
-| Music catalog unavailable message | Both variables must be present in the running backend environment. Restart locally or redeploy on Render. |
+| Music catalog unavailable message | Check configuration and provider response. For a 429 cooldown, wait rather than repeatedly redeploying; see catalog recovery below. |
 | Spotify authentication/access error | Correct app credentials, owner subscription, app eligibility, and current Spotify developer restrictions. Do not share the secret in a screenshot. |
 | Artist link works but names do not | Public oEmbed can work without Web API credentials; it does not enable catalog search. |
 | No similar artists | Check LASTFM_API_KEY and provider access. Related names must match verified Spotify identities; unavailable matches can leave the section empty. |
@@ -43,3 +43,19 @@ The server caches discovery in memory. Restarting clears that cache. Accounts, l
 
 
 Configure `LASTFM_API_KEY` for biographies and recommendations, the public Supabase URL/key for the frontend, and the server-only service-role key for availability checks, deletion and Ripple Mix. See `.env.example` and [Spotify/mix setup](spotify-personalization.md). Apply unapplied migrations in numeric order; do not rerun initialization on an existing database.
+
+## Complete configuration
+
+| Variable | Used by |
+|---|---|
+| `PORT` | Express listener; Render supplies this. |
+| `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Server catalog access. |
+| `LASTFM_API_KEY` | Server biographies, recommendations, tags and rankings. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser account/profile/library access; embedded during the build. The URL is also used by server account routes. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only account operations, mix storage and catalog cache. Never use a `VITE_` prefix. |
+
+Follow the [database migration guide](../supabase/README.md) before enabling database-dependent features. Configure Supabase's Site URL and allowed confirmation redirects to the deployed Ripple domain; localhost redirects are for local development only. See [account settings](account-settings.md).
+
+## Catalog cooldowns
+
+Spotify's Retry-After interval is a provider restriction. Deployments do not cancel it. The cache must have successful results before it can serve them during an outage; a new empty cache cannot supply unknown artists. Read [catalog recovery](catalog-recovery.md) before changing credentials or repeatedly deploying.

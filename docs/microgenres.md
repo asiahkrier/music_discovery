@@ -18,9 +18,9 @@ Selecting a microgenre calls `GET /api/microgenre-artists?tag=…&country=…`. 
 
 ## Limits and caching
 
-- At most three Last.fm or Spotify lookups run at once.
-- Artist tags and microgenre artist lists are cached for six hours (one minute when a list comes back empty), up to 300 entries each.
-- Last.fm requests time out after four seconds. If Last.fm or Spotify is unavailable, the page shows a message and a Try again button instead of breaking.
+- Feature workers use batches of up to three. Actual Spotify catalog calls pass through the shared serial request queue.
+- Artist tags are cached for six hours, including empty tag responses. Microgenre artist lists are cached for six hours, shortened to one minute when empty; each cache holds up to 300 entries.
+- Last.fm requests time out after four seconds. If Last.fm or Spotify is unavailable, the page can show starter genres or an empty artist list. Request-level failures show retry feedback.
 
 ## Tests
 

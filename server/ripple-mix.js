@@ -1,10 +1,11 @@
+import { createHash } from 'node:crypto';
+
 // Preserve ordered pairs and a maximum of two concurrent catalog operations.
 export async function inPairs(items, action, offset = 0) {
   if (offset >= items.length) return [];
   const batch = await Promise.all(items.slice(offset, offset + 2).map(action));
   return batch.concat(await inPairs(items, action, offset + 2));
 }
-import { createHash } from 'node:crypto';
 
 export function mixPreferences(value = {}) {
   const adventure = Number(value.adventure ?? 60);

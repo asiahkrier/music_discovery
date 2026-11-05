@@ -47,4 +47,11 @@ Private server routes require a Supabase bearer token; browser profile/library a
 | `POST /api/mix/mix` | Builds/reuses the weekly mix; `{ refresh: true }` requests rebuilding. |
 | `POST /api/mix/dismiss` | Dismisses a song by ID. |
 
-All `/api/spotify/*` account endpoints are removed. Ripple Mix uses `/api/mix` and Ripple library saves only. See [Ripple Mix](spotify-personalization.md).
+All `/api/spotify/*` account endpoints are removed. Ripple Mix uses `/api/mix` and Ripple library saves only. See [Ripple Mix](ripple-mix.md).
+
+## Microgenres
+
+- `POST /api/microgenres`: accepts `{ artists: string[] }` (at most 50 names, each at most 200 characters). Uses up to 15 saved names to return `{ basis, microgenres }`. `basis` is `saved` or `starter`.
+- `GET /api/microgenre-artists?tag=TAG&country=US`: requires a cleaned tag up to 40 characters; returns `{ tag, artists, sourceUrl }`.
+
+Public catalog results may come from a recent cache during provider outages. See [catalog recovery](catalog-recovery.md). A cached response does not guarantee current playback availability.

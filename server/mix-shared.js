@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 
-// Shared by the Ripple-only mix and the Spotify-connected routes.
+// Authentication, refresh timing, and history helpers for Ripple-library mixes.
 
 // Checks the Ripple login token and stores the user's ID on the request.
 export function requireRippleUser(admin, messages) {

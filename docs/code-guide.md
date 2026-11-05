@@ -9,8 +9,9 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 | Files | Responsibility |
 |---|---|
 | `index.js`, `app.js` | Environment configuration, routes, validation and static frontend hosting. |
-| `spotify.js`, `genres.js` | Spotify app-token catalog access, discovery caching, artwork and genre normalization. |
-| `lastfm.js`, `recommendations.js`, `top-tracks.js` | Biographies, identity-matched related artists and all-time songs. |
+| `spotify.js`, `catalog-store.js`, `genres.js` | Spotify app-token catalog access, persistent public catalog caching, cooldowns, artwork and genre normalization. |
+| `lastfm.js`, `lastfm-tags.js`, `recommendations.js`, `top-tracks.js` | Biographies, identity-matched related artists and all-time songs. |
+| `microgenres.js` | Saved-artist genre tags and matched genre discovery. |
 | `signup-availability.js`, `account-settings.js` | Availability checks and verified account deletion. |
 | `library-mix.js`, `ripple-mix.js`, `mix-shared.js` | Authenticated Ripple-only mix storage, candidate ranking, bounded requests, weekly caching and dismissals. |
 | `fake-supabase.js`, `*.test.js` | Test-only database helper and regression suites. |
@@ -21,7 +22,8 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 |---|---|
 | `main.jsx` | Entry point, discovery/mix/account/settings views and avatar menu. |
 | `ArtistSearch.jsx`, `SongSearch.jsx`, `SearchSuggestions.jsx` | Searches, autocomplete, profile navigation and inline song previews. |
-| `Discovery.jsx`, `discovery-shuffle.js` | Homepage artist cards and ten-second shuffle. |
+| `Discovery.jsx`, `discovery-shuffle.js`, `discovery-cache.js` | Homepage artist cards and ten-second shuffle. |
+| `Microgenres.jsx` | Saved-artist microgenres and artist exploration. |
 | `ArtistPhoto.jsx`, `SongArtwork.jsx` | Artwork and missing-image fallbacks. |
 | `ArtistBiography.jsx`, `RelatedArtists.jsx` | Independently loaded biography and related artists. |
 | `ArtistPlayer.jsx`, `AllTimeTopSongs.jsx` | Spotify artist player and Last.fm-ranked songs with Spotify previews. |
@@ -38,4 +40,4 @@ React calls same-origin Express endpoints for catalog search, Last.fm biographie
 
 Keep numbered Supabase migrations: later migrations may depend on earlier tables/functions even when an old feature has been retired. Existing database columns are not dropped by code cleanup. Sprint reports and the demonstration video are coursework history, not unused application code.
 
-Use `npm test` and `npm run build` before review. See [API](api.md), [account setup](ACCOUNT-SETUP.md) and [Ripple Mix setup](spotify-personalization.md).
+Use `npm test` and `npm run build` before review. See [API](api.md), [account setup](ACCOUNT-SETUP.md) and [Ripple Mix setup](ripple-mix.md).
